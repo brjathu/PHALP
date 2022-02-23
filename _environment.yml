@@ -1,4 +1,4 @@
-name: PHALP_6
+name: PHALP
 channels:
   - pytorch
   - defaults

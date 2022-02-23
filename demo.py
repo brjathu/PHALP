@@ -305,7 +305,7 @@ if __name__ == '__main__':
             fe = FrameExtractor(base_path_frames + video + "/youtube.mp4")
             print(fe.n_frames)
             print(fe.get_video_duration())
-            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[300, 400])
+            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[1200, 1400])
 
         os.system("rm -rf " + "_DATA/detections/" + track_dataset + "/" + video)
         os.system("mkdir "  + "_DATA/detections/" + track_dataset + "/" + video)
@@ -335,7 +335,7 @@ if __name__ == '__main__':
         opt.batch_id           = -1
         opt.video_seq          = video
         
-        opt.render_type        = "HUMAN_HEAD"
+        opt.render_type        = "HUMAN_HEAD_FAST"
         opt.render             = True
         opt.res                = 256
         opt.render_up_scale    = 2

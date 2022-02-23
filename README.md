@@ -49,7 +49,7 @@ or you can run the following command.
 
 `curl -L -o '_DATA.zip' 'https://drive.google.com/uc?id=1jEUahdb0WU5FOTllTEfFZrU4yQhshlQL&confirm=t'; unzip _DATA.zip`
 
-Besides these files, you also need to download the [neutral *SMPL* model](http://smplify.is.tue.mpg.de). Please go to the website for the corresponding project and register to get access to the downloads section. Create a folder `_DATA/models/smpl/` and place the model there. Otherwise, you can also run:
+Besides these files, you also need to download the [neutral *SMPL* model](http://smplify.is.tue.mpg.de). Please go to the website for the corresponding project and register to get access to the downloads section. Otherwise, you can also run:
 
 `python3 utils/convert_smpl.py`
     

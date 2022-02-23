@@ -203,7 +203,6 @@ dependencies:
     - smmap==4.0.0
     - subprocess32==3.5.4
     - tabulate==0.8.9
-    - tao==0.1.0
     - tensorboard==2.7.0
     - tensorboard-data-server==0.6.1
     - tensorboard-plugin-wit==1.8.0

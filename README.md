@@ -14,7 +14,7 @@ This code repository provides a code implementation for our paper PHALP, with in
 We recommend creating a clean [conda](https://docs.conda.io/) environment and install all dependencies.
 You can do this as follows:
 ```
-conda env create -f _environment.yml
+conda env create -f scripts/_environment.yml
 ```
 
 After the installation is complete you can activate the conda environment by running:

@@ -68,6 +68,7 @@ Please run the following command to run our method on a youtube video. This will
 We evaluated our method on PoseTrack, MuPoTs and AVA datasets. Our results show significant improvements over the state-of-the-art methods on person tracking. For more results please visit our [website](http://people.eecs.berkeley.edu/~jathushan/PHALP/).
 
 
+<p align="center"><img src="./utils/imgs/PHALP_10.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_1.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_2.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_3.gif" width="800"></p>

@@ -305,7 +305,7 @@ if __name__ == '__main__':
             fe = FrameExtractor(base_path_frames + video + "/youtube.mp4")
             print(fe.n_frames)
             print(fe.get_video_duration())
-            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[1200, 1400])
+            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[1200, 1300])
 
         os.system("rm -rf " + "_DATA/detections/" + track_dataset + "/" + video)
         os.system("mkdir "  + "_DATA/detections/" + track_dataset + "/" + video)

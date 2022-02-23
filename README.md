@@ -1,7 +1,7 @@
 # Tracking People by Predicting 3D Appearance, Location & Pose
 Code repository for the paper "Tracking People by Predicting 3D Appearance, Location & Pose". \
 [Jathushan Rajasegaran](http://people.eecs.berkeley.edu/~jathushan/), [Georgios Pavlakos](https://geopavlakos.github.io/), [Angjoo Kanazawa](https://people.eecs.berkeley.edu/~kanazawa/), [Jitendra Malik](http://people.eecs.berkeley.edu/~malik/). \
-[(paper)](https://arxiv.org/abs/2112.04477)       [(project page)](https://people.eecs.berkeley.edu/~jathushan/PHALP/)      <font size="60"> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1zeHvAcvflsty2p9Hgr49-AhQjkSWCXjr?usp=sharing) </font>
+[(paper)](https://arxiv.org/abs/2112.04477)       [(project page)](https://people.eecs.berkeley.edu/~jathushan/PHALP/)     [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1zeHvAcvflsty2p9Hgr49-AhQjkSWCXjr?usp=sharing)
  
 This code repository provides a code implementation for our paper PHALP, with installation, preparing datasets, and evaluating on datasets, and a demo code to run on any youtube videos. 
 

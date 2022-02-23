@@ -1,0 +1,20 @@
+python test_tracker.py \
+--version            "v1" \
+--track_dataset      "posetrack" \
+--video_seq          "_DATA/posetrack/list_videos_val.npy" \
+--base_path          "_DATA/posetrack/posetrack_data/images/val/" \
+--mask_path          "_DATA/detections/posetrack/" \
+--storage_folder     "Videos_results" \
+--predict            "TPL" \
+--distance_type      "EQ_A" \
+--track_history      7 \
+--max_age_track      24 \
+--low_th_c           0.9 \
+--hungarian_th       100 \
+--render_type        "GHOST_HEAD_FAST" \
+--render             True \
+--res                256 \
+--render_up_scale    2 \
+--verbose            False \
+--use_gt             False \
+--batch_id           -1

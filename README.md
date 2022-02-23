@@ -22,19 +22,10 @@ After the installation is complete you can activate the conda environment by run
 conda activate PHALP
 ```
 
-Install PyOpenGL from this repository:
+Install PyOpenGL, TrackEval, PyTube and Neural Mesh Renderer from their respective repositories:
+
 ```
-pip uninstall pyopengl
-git clone https://github.com/mmatl/pyopengl.git external/pyopengl
-pip install ./external/pyopengl
-
-git clone https://github.com/JonathonLuiten/TrackEval external/TrackEval
-pip install -r external/TrackEval/requirements.txt
-
-git clone https://github.com/brjathu/pytube external/pytube
-cd external/pytube/; python setup.py install; cd ../..
-
-cd external/neural_renderer/; python setup.py install; cd ../..
+./scripts/setup.sh
 ```
 
 Additionally, install [Detectron2](https://github.com/facebookresearch/detectron2) from the official repository.

@@ -24,7 +24,6 @@ conda activate PHALP
 
 Install PyOpenGL from this repository:
 ```
-mkdir external
 pip uninstall pyopengl
 git clone https://github.com/mmatl/pyopengl.git external/pyopengl
 pip install ./external/pyopengl
@@ -44,10 +43,10 @@ Additionally, install [Detectron2](https://github.com/facebookresearch/detectron
 
 Please download this folder and extract inside the main repository.
 
-- [_DATA/](https://drive.google.com/uc?id=13XUwfHFsuyr14wCfjn_BPkBwx-uQ8woX)
+- [_DATA/](https://drive.google.com/uc?id=1jEUahdb0WU5FOTllTEfFZrU4yQhshlQL)
 
 or you can run the following command.
-`curl -L -o '_DATA.zip' 'https://drive.google.com/uc?id=13XUwfHFsuyr14wCfjn_BPkBwx-uQ8woX&confirm=t'; unzip _DATA.zip`
+`curl -L -o '_DATA.zip' 'https://drive.google.com/uc?id=1jEUahdb0WU5FOTllTEfFZrU4yQhshlQL&confirm=t'; unzip _DATA.zip`
 
 Besides these files, you also need to download the [neutral *SMPL* model](http://smplify.is.tue.mpg.de). Please go to the website for the corresponding project and register to get access to the downloads section. Create a folder `_DATA/models/smpl/` and place the model there. Otherwise, you can also run:
 

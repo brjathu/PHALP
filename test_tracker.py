@@ -58,7 +58,7 @@ def test_tracker(opt, phalp_tracker, checkpoint=None):
                 tracker          = Tracker(opt, metric, max_age=opt.max_age_track, n_init=opt.n_init, phalp_tracker=phalp_tracker, dims=[4096, 4096, 99])  
 
                 frame_list       = sorted(list(track[video].keys()))
-                frame_list       = frame_list[:4000]
+                frame_list       = frame_list[:]
                 frame_length     = len(frame_list)
                 max_ids          = opt.max_ids
                 person_id        = torch.zeros(frame_length, max_ids) + -1

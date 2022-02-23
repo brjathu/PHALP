@@ -37,7 +37,7 @@ cd external/pytube/; python setup.py install; cd ../..
 cd external/neural_renderer/; python setup.py install; cd ../..
 ```
 
-Additionally, install [Detectron2](https://github.com/facebookresearch/detectron2) from the official repository, if you need to run demo code on a local machine. We provide detections inside the _DATA folder, so for running the tracker on posetrack or mupots, you do not need to install Detectron2.
+Additionally, install [Detectron2](https://github.com/facebookresearch/detectron2) from the official repository.
 
 ## Download Weights and Data
 

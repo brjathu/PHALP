@@ -10,4 +10,5 @@ cd external/pytube/; python setup.py install; cd ../..
 
 cd external/neural_renderer/; python setup.py install; cd ../..
 
+pip install --upgrade numpy
 mkdir out

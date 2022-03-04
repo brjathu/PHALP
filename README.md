@@ -21,7 +21,7 @@ After the installation is complete you can activate the conda environment by run
 ```
 conda activate PHALP
 ```
-Please set your CUDA_HOME to the PHALP envirnment. `export CUDA_HOME=/home/<USER NAME>/anaconda3/envs/PHALP/`
+Please set your CUDA_HOME to the PHALP environment. `export CUDA_HOME=/home/<USER NAME>/anaconda3/envs/PHALP/`
 Install PyOpenGL, TrackEval, PyTube and Neural Mesh Renderer from their respective repositories:
 
 ```

@@ -1,4 +1,4 @@
-# Tracking People by Predicting 3D Appearance, Location & Pose
+# Tracking People by Predicting 3D Appearance, Location & Pose (CVPR 2022)
 Code repository for the paper "Tracking People by Predicting 3D Appearance, Location & Pose". \
 [Jathushan Rajasegaran](http://people.eecs.berkeley.edu/~jathushan/), [Georgios Pavlakos](https://geopavlakos.github.io/), [Angjoo Kanazawa](https://people.eecs.berkeley.edu/~kanazawa/), [Jitendra Malik](http://people.eecs.berkeley.edu/~malik/). \
 [![arXiv](https://img.shields.io/badge/arXiv-2112.04477-00ff00.svg)](https://arxiv.org/abs/2112.04477)       [![Website shields.io](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)](https://people.eecs.berkeley.edu/~jathushan/PHALP/)     [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1zeHvAcvflsty2p9Hgr49-AhQjkSWCXjr?usp=sharing)
@@ -21,7 +21,7 @@ After the installation is complete you can activate the conda environment by run
 ```
 conda activate PHALP
 ```
-
+Please set your CUDA_HOME to the PHALP environment. `export CUDA_HOME=/home/<USER NAME>/anaconda3/envs/PHALP/`
 Install PyOpenGL, TrackEval, PyTube and Neural Mesh Renderer from their respective repositories:
 
 ```
@@ -29,6 +29,10 @@ Install PyOpenGL, TrackEval, PyTube and Neural Mesh Renderer from their respecti
 ```
 
 Additionally, install [Detectron2](https://github.com/facebookresearch/detectron2) from the official repository.
+```
+python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu113/torch1.10/index.html
+```
+		
 
 ## Download Weights and Data
 
@@ -68,7 +72,7 @@ Please run the following command to run our method on a youtube video. This will
 We evaluated our method on PoseTrack, MuPoTs and AVA datasets. Our results show significant improvements over the state-of-the-art methods on person tracking. For more results please visit our [website](http://people.eecs.berkeley.edu/~jathushan/PHALP/).
 
 
-<p align="center"><img src="./utils/imgs/PHALP_10.gif" width="800"></p>
+<!-- <p align="center"><img src="./utils/imgs/PHALP_10.gif" width="800"></p> -->
 <p align="center"><img src="./utils/imgs/PHALP_1.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_2.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_3.gif" width="800"></p>

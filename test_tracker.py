@@ -37,6 +37,7 @@ def test_tracker(opt, phalp_tracker, checkpoint=None):
     video_seq    = np.load(opt.video_seq) if("npy" in opt.video_seq) else [opt.video_seq]
     
     try:
+        os.system("mkdir out/")
         os.system("mkdir out/" + opt.storage_folder)
         os.system("mkdir out/" + opt.storage_folder + "/results")        
     except: pass

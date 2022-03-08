@@ -60,7 +60,7 @@ To evaluate the tracking performance on ID switches, MOTA, and IDF1 and HOTA met
 
 Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
 
-`python3 demo.py --track_dataset demo`
+`python3 demo.py`
 
 
 ## Results ([Project site](http://people.eecs.berkeley.edu/~jathushan/PHALP/))

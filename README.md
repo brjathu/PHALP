@@ -66,6 +66,10 @@ Please run the following command to run our method on a youtube video. This will
 
 `python3 demo.py`
 
+Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
+
+<p align="center"><img src="./utils/imgs/render_type.png" width="800"></p>
+
 
 ## Results ([Project site](http://people.eecs.berkeley.edu/~jathushan/PHALP/))
 

@@ -249,7 +249,7 @@ if __name__ == '__main__':
     # ########## Youtube Demo videos
     if(opt.track_dataset=="demo"):
         track_dataset    = "demo"
-        links            = ['xEH_5T9jMVU'] 
+        links            = ['GAyt3KUVkrY'] 
         videos           = ["youtube_"+str(i) for i,j in enumerate(links)]
         base_path_frames = "_DATA/DEMO/frames/youtube/"
 
@@ -270,7 +270,7 @@ if __name__ == '__main__':
             fe = FrameExtractor(base_path_frames + video + "/youtube.mp4")
             print(fe.n_frames)
             print(fe.get_video_duration())
-            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[1200, 1300])
+            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[0, 130000])
 
         os.system("rm -rf " + "_DATA/detections/" + track_dataset + "/" + video)
         os.system("mkdir "  + "_DATA/detections/" + track_dataset + "/" + video)

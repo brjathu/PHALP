@@ -171,7 +171,7 @@ class ResnetBlock(nn.Module):
         if self.learned_shortcut:
             self.conv_s = nn.Conv2d(fin, fout, kernel_size=1, bias=False)
 
-            self.conv_0 = spectral_norm(self.conv_0)
+        self.conv_0 = spectral_norm(self.conv_0)
         self.conv_1 = spectral_norm(self.conv_1)
         if self.learned_shortcut:
             self.conv_s = spectral_norm(self.conv_s)

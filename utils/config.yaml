@@ -1,4 +1,4 @@
-SMPLX:
+SMPL:
   MODEL_PATH: _DATA/models
   GENDER: neutral
   MODEL_TYPE: smpl
@@ -8,10 +8,10 @@ SMPLX:
   TEXTURE: _DATA/texture.npz
 MODEL:
   IMAGE_SIZE: 256
-  SMPLX_HEAD:
+  SMPL_HEAD:
       TYPE: basic
       POOL: max
-      SMPLX_MEAN_PARAMS: _DATA/smpl_mean_params.npz
+      SMPL_MEAN_PARAMS: _DATA/smpl_mean_params.npz
       IN_CHANNELS: 2048
   BACKBONE:
     TYPE: resnet

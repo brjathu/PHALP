@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-import math
 from torch.nn import BatchNorm2d
 import torch.nn.utils.spectral_norm as spectral_norm
  
@@ -66,7 +64,7 @@ class BaseNetwork(nn.Module):
                     init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
                 elif init_type == 'orthogonal':
                     init.orthogonal_(m.weight.data, gain=gain)
-                elif init_type == 'none':  # uses pytorch's default init method
+                elif init_type == 'none':  
                     m.reset_parameters()
                 else:
                     raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
@@ -182,12 +180,8 @@ class ResnetBlock(nn.Module):
         if self.learned_shortcut:
             self.norm_s = BatchNorm2d(fin)
 
-    # note the resnet block with SPADE also takes in |seg|,
-    # the semantic segmentation map as input
     def forward(self, x):
-        # seg is texture structure
         x_s = self.shortcut(x)
-
         dx = self.conv_0(self.actvn(self.norm_0(x)))
         dx = self.conv_1(self.actvn(self.norm_1(dx)))
 

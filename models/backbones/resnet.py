@@ -7,7 +7,7 @@ import torch.utils.model_zoo as model_zoo
 import copy
 import cv2
 import numpy as np
-
+    
 __all__ = ['ResNet', 'resnet50']
 
 model_urls = {
@@ -174,7 +174,6 @@ def resnet50(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        print('Initialize with pre-trained ResNet')
         from collections import OrderedDict
         state_dict = model.state_dict()
         pretrained_state_dict = model_zoo.load_url(model_urls['resnet50'])
@@ -182,6 +181,5 @@ def resnet50(pretrained=False, **kwargs):
             if k not in state_dict:
                 continue
             state_dict[k] = v
-        print('successfully load '+str(len(state_dict.keys()))+' keys')
         model.load_state_dict(state_dict)
     return model

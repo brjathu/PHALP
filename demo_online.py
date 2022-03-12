@@ -44,11 +44,8 @@ RGB_tuples = get_colors()
     
 def test_tracker_online(opt, phalp_tracker, checkpoint=None):
 
-    try:
-        os.system("mkdir out/" + opt.storage_folder)
-        os.system("mkdir out/" + opt.storage_folder + "/results")        
-    except: pass
-
+    os.makedirs("out/" + opt.storage_folder, exist_ok=True)    
+    os.makedirs("out/" + opt.storage_folder + "/results", exist_ok=True)       
 
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml"))   
@@ -242,9 +239,9 @@ if __name__ == '__main__':
     parser_demo.add_argument('--track_dataset', type=str, default='demo')
     opt         = parser_demo.parse_args()
 
-    os.system("mkdir "  + "_DATA/detections/" )
-    os.system("mkdir "  + "_DATA/embeddings/")
-    os.system("mkdir "  + "_DATA/out/")
+    os.makedirs("_DATA/detections/", exist_ok=True) 
+    os.makedirs("_DATA/embeddings/", exist_ok=True) 
+    os.makedirs("out/", exist_ok=True) 
     
     # ########## Youtube Demo videos
     if(opt.track_dataset=="demo"):
@@ -253,27 +250,24 @@ if __name__ == '__main__':
         videos           = ["youtube_"+str(i) for i,j in enumerate(links)]
         base_path_frames = "_DATA/DEMO/frames/youtube/"
 
-    os.system("mkdir "  + "_DATA/detections/" + track_dataset)
-        
+    os.makedirs("_DATA/detections/" + track_dataset, exist_ok=True)    
         
         
     for vid, video in enumerate(videos):        
         if(track_dataset=="demo"):
             os.system("rm -rf " + base_path_frames + video)
-            os.system("mkdir "  + base_path_frames + video)
-            print('https://www.youtube.com/watch?v=' + links[vid])
+            os.makedirs(base_path_frames + video, exist_ok=True)    
             youtube_video = YouTube('https://www.youtube.com/watch?v=' + links[vid])
             print(f'Title: {youtube_video.title}')
             print(f'Duration: {youtube_video.length / 60:.2f} minutes')
-            # print(youtube_video.streams.all())
             youtube_video.streams.get_by_itag(136).download(output_path = base_path_frames + video, filename="youtube.mp4")
             fe = FrameExtractor(base_path_frames + video + "/youtube.mp4")
-            print(fe.n_frames)
-            print(fe.get_video_duration())
-            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[0, 130000])
+            print('Number of frames: ', fe.n_frames)
+            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[0, 10000])
 
         os.system("rm -rf " + "_DATA/detections/" + track_dataset + "/" + video)
-        os.system("mkdir "  + "_DATA/detections/" + track_dataset + "/" + video)
+        os.makedirs("_DATA/detections/" + track_dataset + "/" + video, exist_ok=True)    
+        
         frames_path            = base_path_frames + video
         detections_path        = "_DATA/detections/" + track_dataset + "/" + video + "/"
 

@@ -26,7 +26,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .utils import BoxRelationalEmbedding, BoxTimeRelationalEmbedding, BoxTimeIdRelationalEmbedding
-#utils.PositionalEmbedding()
 import copy
 import math
 import numpy as np
@@ -99,15 +98,12 @@ def box_attention(query, key, value, box_relation_embds_matrix, mask=None, dropo
     #attention weights
     scaled_dot = torch.matmul(w_q,w_k)
     scaled_dot = scaled_dot / np.sqrt(dim_k)
-    #print(scaled_dot.shape)
-    #print(mask.shape)
     if mask is not None:
         scaled_dot = scaled_dot.masked_fill(mask == 0, -1e4)
 
     #w_g = box_relation_embds_matrix.view(N,N)
     w_g = box_relation_embds_matrix
     w_a = scaled_dot
-    #w_a = scaled_dot.view(N,N)
 
     # multiplying log of geometric weights by feature weights
     w_mn = torch.log(torch.clamp(w_g, min = 1e-6)) + w_a
@@ -154,7 +150,6 @@ class BoxMultiHeadedAttention(nn.Module):
     def forward(self, input_query, input_key, input_value, input_box, mask=None):
         "Implements Figure 2 of Relation Network for Object Detection"
         if mask is not None:
-            # Same mask applied to all h heads.
             mask = mask.unsqueeze(1)
         nbatches = input_query.size(0)
 
@@ -186,10 +181,6 @@ class BoxMultiHeadedAttention(nn.Module):
         x = x.transpose(1, 2).contiguous() \
              .view(nbatches, -1, self.h * self.d_k)
 
-        # An extra internal skip connection is added. This is only
-        # kept here for compatibility with some legacy models. In
-        # general, there is no advantage in using it, as there is
-        # already an outer skip connection surrounding this layer.
         if self.legacy_extra_skip:
             x = input_value + x
 
@@ -226,8 +217,6 @@ class RelationTransformerModel(nn.Module):
                                    box_feats=self.box_feats)
         self.norm1 = LayerNorm(self.input_encoding_size)
 
-        # This was important from their code.
-        # Initialize parameters with Glorot / fan_avg.
         for p in self.layer1.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
@@ -244,8 +233,6 @@ class RelationTransformerModel(nn.Module):
                                        box_feats=self.box_feats)
             self.norm2 = LayerNorm(self.input_encoding_size)
 
-            # This was important from their code.
-            # Initialize parameters with Glorot / fan_avg.
             for p in self.layer2.parameters():
                 if p.dim() > 1:
                     nn.init.xavier_uniform_(p)
@@ -262,8 +249,6 @@ class RelationTransformerModel(nn.Module):
                                        box_feats=self.box_feats)
             self.norm3 = LayerNorm(self.input_encoding_size)
 
-            # This was important from their code.
-            # Initialize parameters with Glorot / fan_avg.
             for p in self.layer3.parameters():
                 if p.dim() > 1:
                     nn.init.xavier_uniform_(p)
@@ -272,18 +257,9 @@ class RelationTransformerModel(nn.Module):
                     nn.init.xavier_uniform_(p)
 
     def forward(self, att_feats, boxes, att_masks=None):
-        # updated mask
-        #print(att_masks.shape)
-#        att_masks = torch.einsum('bm,bn->bmn', att_masks, att_masks)
-        #print(att_feats.shape)
-        #print(boxes.shape)
-        #print(att_masks.shape)
-        # x = att_feats + self.norm1(self.layer1(att_feats, boxes, att_masks))/10.
         x = self.norm1(self.layer1(att_feats, boxes, att_masks))/10.
         if self.layers > 1:
             x = x + self.norm2(self.layer2(x, boxes, att_masks))/10.
             if self.layers > 2:
                 x = x + self.norm3(self.layer3(x, boxes, att_masks))/10.
-        #print(x.shape)
-        #print(att_feats.shape)
         return x

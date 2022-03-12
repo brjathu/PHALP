@@ -36,13 +36,9 @@ def test_tracker(opt, phalp_tracker, checkpoint=None):
     phalp_tracker.eval()
     video_seq    = np.load(opt.video_seq) if("npy" in opt.video_seq) else [opt.video_seq]
     
-    try:
-        os.system("mkdir out/")
-        os.system("mkdir out/" + opt.storage_folder)
-        os.system("mkdir out/" + opt.storage_folder + "/results")        
-    except: pass
-
-
+    os.makedirs("out/", exist_ok=True)
+    os.makedirs("out/"+opt.storage_folder, exist_ok=True)
+    os.makedirs("out/"+opt.storage_folder+"/results", exist_ok=True)      
 
     for video_file_name in tqdm(video_seq):
 
@@ -54,7 +50,6 @@ def test_tracker(opt, phalp_tracker, checkpoint=None):
             final_visuals_dic    = {}
             sequence             = track.keys()
             for video in sequence:
-                os.system("rm -rf out/" + opt.storage_folder + "/_TEMP/*")
                 metric           = nn_matching.NearestNeighborDistanceMetric(opt, opt.hungarian_th, opt.past_lookback)
                 tracker          = Tracker(opt, metric, max_age=opt.max_age_track, n_init=opt.n_init, phalp_tracker=phalp_tracker, dims=[4096, 4096, 99])  
 
@@ -195,11 +190,8 @@ def test_tracker(opt, phalp_tracker, checkpoint=None):
                 for t_, frame_ in enumerate(frame_list):
                     if(frame_ not in frame_tracked): final_results_dic.setdefault(frame_, [[], [[]], t_]) 
 
-                save_loc = video_file_name.split("/")[0] + "______" + video_file_name.split("/")[1] if("AVA" in opt.track_dataset) else video_file_name
-                joblib.dump(final_results_dic, "out/" + opt.storage_folder + "/results/" + save_loc + ".pkl")
-
-                save_loc = video_file_name.split("/")[0] + "______" + video_file_name.split("/")[1] if("AVA" in opt.track_dataset) else video_file_name+"_distance"
-                joblib.dump(tracker.tracked_cost, "out/" + opt.storage_folder + "/results/" + save_loc + ".pkl")
+                joblib.dump(final_results_dic, "out/" + opt.storage_folder + "/results/" + video_file_name + ".pkl")
+                joblib.dump(tracker.tracked_cost, "out/" + opt.storage_folder + "/results/" + video_file_name + "_distance" + ".pkl")
 
                 if(opt.render):
                     t_ = 0
@@ -210,8 +202,7 @@ def test_tracker(opt, phalp_tracker, checkpoint=None):
                                                                number_of_windows=4, downsample=opt.downsample, storage_folder="out/" + opt.storage_folder + "/_TEMP/", track_id=-100)      
                         if(t_==0):
                             fourcc         = cv2.VideoWriter_fourcc(*'mp4v')
-                            video_loc      = video.split("/")[0] + "______" + video.split("/")[1] if("AVA" in opt.track_dataset) else video
-                            video_file     = cv2.VideoWriter("out/" + opt.storage_folder + "/PHALP_" + opt.track_dataset + "_" + video + ".mp4", fourcc, 15, frameSize=f_size)
+                            video_file     = cv2.VideoWriter("out/" + opt.storage_folder + "/" + video + ".mp4", fourcc, 15, frameSize=f_size)
                         video_file.write(rendered_)
                         t_ += 1
                     video_file.release()

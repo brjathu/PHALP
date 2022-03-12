@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from torch.autograd import DataLoader
 from torchvision.utils import save_image, make_grid
 
 import os
@@ -73,7 +72,7 @@ class PHALP_tracker(nn.Module):
             attn                 = torch.ones(BS, history, history)
             xf_trans             = self.HMAR.pose_transformer.relational(en_pose[:, :, 2048:].float().cuda(), en_data.float().cuda(), attn.float().cuda())  #bs, 13, 2048
             xf_trans             = xf_trans.view(-1, 2048)
-            movie_strip_t        = self.HMAR.pose_transformer.smplx_head_prediction(en_pose[:, :, 2048:].float().view(-1, 2048).cuda(), xf_trans)  #bs*13, 2048 -> bs*13, 12, 2048
+            movie_strip_t        = self.HMAR.pose_transformer.smpl_head_prediction(en_pose[:, :, 2048:].float().view(-1, 2048).cuda(), xf_trans)  #bs*13, 2048 -> bs*13, 12, 2048
             movie_strip_t        = movie_strip_t.view(BS, history, 12, 2048)
             xf_trans             = xf_trans.view(BS, history, 2048)
 

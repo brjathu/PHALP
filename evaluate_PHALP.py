@@ -20,15 +20,6 @@ def evaluate_trackers(results_dir, method="phalp", dataset="posetrack", make_vid
     if(dataset=="posetrack"): data_gt = joblib.load('_DATA/posetrack/gt_data.pickle')     ; base_dir = "_DATA/posetrack/posetrack_data/"
     if(dataset=="mupots"):    data_gt = joblib.load('_DATA/mupots/gt_data.pickle')        ; base_dir = "_DATA/mupots/mupots_data/"
     if(dataset=="ava"):       data_gt = joblib.load('_DATA/ava/gt_data.pickle')           ; base_dir = "_DATA/ava/ava_data/"
-    # if(dataset=="ava"):       
-    #     data_gt  = joblib.load('_DATA/AVA/gt_data.pickle')
-    #     base_dir = ""
-    #     data_old = np.load("_DATA/ava_val_evaluation.npz")
-    #     old_video_names_ = [i for i in os.listdir("_Videos/AVA_2/") if "frame" in i]
-    #     old_video_names = []
-    #     for frame in old_video_names_:
-    #         old_video_names += [frame + "/" + i for i in os.listdir("AVA_2/"+frame+"/") if len(i)>=10]
-        
         
     data_all              = {}
     total_annoated_frames = 0

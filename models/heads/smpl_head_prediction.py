@@ -5,14 +5,14 @@ import numpy as np
 import math
 from torch.nn import BatchNorm2d
 
-class SMPLXHeadPrediction(nn.Module):
-    """ SMPLX Iterative Regressor with ResNet50 backbone
+class SMPLHeadPrediction(nn.Module):
+    """ SMPL Iterative Regressor with ResNet50 backbone
     """
 
     def __init__(self, cfg):
-        super(SMPLXHeadPrediction, self).__init__()
+        super(SMPLHeadPrediction, self).__init__()
         self.cfg = cfg
-        in_channels = cfg.MODEL.SMPLX_HEAD.IN_CHANNELS
+        in_channels = cfg.MODEL.SMPL_HEAD.IN_CHANNELS
 
         self.up1_1 = nn.Linear(in_channels, in_channels)
         self.dropup1 = nn.Dropout()

@@ -44,7 +44,8 @@ class PHALP_tracker(nn.Module):
         checkpoint_file = torch.load(checkpoint)
         for k, v in checkpoint_file['model'].items():
             if ("encoding_head" in k): state_dict_filt.setdefault(k[5:], v)
-            
+        state_dict_filt = {k.replace('smplx', 'smpl'): v for k, v in state_dict_filt.items()}
+        
         self.HMAR.load_state_dict(state_dict_filt, strict=False)
         self.HMAR.cuda()
         self.HMAR.eval()

@@ -95,9 +95,11 @@ class HMAR(nn.Module):
             checkpoint_file = torch.load("_DATA/hmmr_weights.pt")
             
             state_dict_filt = {k[11:]: v for k, v in checkpoint_file['model'].items() if ("relational" in k)}  
+            state_dict_filt = {k.replace('smplx', 'smpl'): v for k, v in state_dict_filt.items()}
             self.pose_transformer.relational.load_state_dict(state_dict_filt, strict=True)
 
             state_dict_filt = {k[18:]: v for k, v in checkpoint_file['model'].items() if ("smpl_head_future" in k)}  
+            state_dict_filt = {k.replace('smplx', 'smpl'): v for k, v in state_dict_filt.items()}
             self.pose_transformer.smpl_head_prediction.load_state_dict(state_dict_filt, strict=False)
 
 

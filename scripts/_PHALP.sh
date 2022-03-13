@@ -11,7 +11,7 @@ python test_tracker.py \
 --max_age_track      24 \
 --low_th_c           0.9 \
 --hungarian_th       100 \
---render_type        "GHOST_HEAD_FAST" \
+--render_type        "HUMAN_HEAD_FAST" \
 --render             True \
 --res                256 \
 --render_up_scale    2 \

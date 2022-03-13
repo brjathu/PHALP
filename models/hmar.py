@@ -20,7 +20,7 @@ from .heads.smpl_head import SMPLHead
 from .heads.apperence_head import TextureHead
 from .heads.encoding_head import EncodingHead
 from .joint_mapper import JointMapper, smpl_to_openpose
-from .smpl import create
+from .smplx import create
 from .utils import perspective_projection
 
 from yacs.config import CfgNode as CN

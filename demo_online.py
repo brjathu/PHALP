@@ -236,7 +236,8 @@ def test_tracker_online(opt, phalp_tracker, checkpoint=None):
 if __name__ == '__main__':
     
     parser_demo = argparse.ArgumentParser(description='Demo')
-    parser_demo.add_argument('--track_dataset', type=str, default='demo')
+    parser_demo.add_argument('--youtube_link', type=str, default='xEH_5T9jMVU')
+    parser_demo.add_argument('--max_frames', type=int, default=100)
     opt         = parser_demo.parse_args()
 
     os.makedirs("_DATA/detections/", exist_ok=True) 
@@ -244,26 +245,25 @@ if __name__ == '__main__':
     os.makedirs("out/", exist_ok=True) 
     
     # ########## Youtube Demo videos
-    if(opt.track_dataset=="demo"):
-        track_dataset    = "demo"
-        links            = ['xEH_5T9jMVU'] 
-        videos           = ["youtube_"+str(i) for i,j in enumerate(links)]
-        base_path_frames = "_DATA/DEMO/frames/youtube/"
+    track_dataset    = "demo"
+    links            = [opt.youtube_link] # you can add more links if you want
+    videos           = ["youtube_"+str(i) for i,j in enumerate(links)]
+    base_path_frames = "_DATA/DEMO/frames/youtube/"
 
     os.makedirs("_DATA/detections/" + track_dataset, exist_ok=True)    
         
         
     for vid, video in enumerate(videos):        
-        if(track_dataset=="demo"):
-            os.system("rm -rf " + base_path_frames + video)
-            os.makedirs(base_path_frames + video, exist_ok=True)    
-            youtube_video = YouTube('https://www.youtube.com/watch?v=' + links[vid])
-            print(f'Title: {youtube_video.title}')
-            print(f'Duration: {youtube_video.length / 60:.2f} minutes')
-            youtube_video.streams.get_by_itag(136).download(output_path = base_path_frames + video, filename="youtube.mp4")
-            fe = FrameExtractor(base_path_frames + video + "/youtube.mp4")
-            print('Number of frames: ', fe.n_frames)
-            fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[0, 10000])
+        
+        os.system("rm -rf " + base_path_frames + video)
+        os.makedirs(base_path_frames + video, exist_ok=True)    
+        youtube_video = YouTube('https://www.youtube.com/watch?v=' + links[vid])
+        print(f'Title: {youtube_video.title}')
+        print(f'Duration: {youtube_video.length / 60:.2f} minutes')
+        youtube_video.streams.get_by_itag(136).download(output_path = base_path_frames + video, filename="youtube.mp4")
+        fe = FrameExtractor(base_path_frames + video + "/youtube.mp4")
+        print('Number of frames: ', fe.n_frames)
+        fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[0, opt.max_frames])
 
         os.system("rm -rf " + "_DATA/detections/" + track_dataset + "/" + video)
         os.makedirs("_DATA/detections/" + track_dataset + "/" + video, exist_ok=True)    

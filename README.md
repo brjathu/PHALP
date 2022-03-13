@@ -67,7 +67,7 @@ To evaluate the tracking performance on ID switches, MOTA, and IDF1 and HOTA met
 
 Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
 
-`python3 demo_online.py --youtube_link xEH_5T9jMVU --max_frames=100`
+`python3 demo_online.py --youtube_link xEH_5T9jMVU --start_frame 1250 --end_frame 1400`
 
 Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
 

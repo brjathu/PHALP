@@ -237,7 +237,8 @@ if __name__ == '__main__':
     
     parser_demo = argparse.ArgumentParser(description='Demo')
     parser_demo.add_argument('--youtube_link', type=str, default='xEH_5T9jMVU')
-    parser_demo.add_argument('--max_frames', type=int, default=100)
+    parser_demo.add_argument('--start_frame', type=int, default=0)
+    parser_demo.add_argument('--end_frame', type=int, default=100)
     opt         = parser_demo.parse_args()
 
     os.makedirs("_DATA/detections/", exist_ok=True) 
@@ -263,7 +264,7 @@ if __name__ == '__main__':
         youtube_video.streams.get_by_itag(136).download(output_path = base_path_frames + video, filename="youtube.mp4")
         fe = FrameExtractor(base_path_frames + video + "/youtube.mp4")
         print('Number of frames: ', fe.n_frames)
-        fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[0, opt.max_frames])
+        fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[opt.start_frame, opt.end_frame])
 
         os.system("rm -rf " + "_DATA/detections/" + track_dataset + "/" + video)
         os.makedirs("_DATA/detections/" + track_dataset + "/" + video, exist_ok=True)    
@@ -290,7 +291,7 @@ if __name__ == '__main__':
         opt.batch_id           = -1
         opt.video_seq          = [video]
         
-        opt.render_type        = "HUMAN_HEAD_FAST"
+        opt.render_type        = "HUMAN_FULL_FAST"
         opt.render             = True
         opt.res                = 256
         opt.render_up_scale    = 2

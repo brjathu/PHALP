@@ -48,6 +48,17 @@ Besides these files, you also need to download the [neutral *SMPL* model](http:/
 
 `python3 utils/convert_smpl.py`
     
+## Demo
+
+Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
+
+`python3 demo_online.py --youtube_link xEH_5T9jMVU --start_frame 1250 --end_frame 1400`
+
+Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
+
+<p align="center"><img src="./utils/imgs/render_type.png" width="800"></p>
+
+
 ## Testing
 
 Once the posetrack dataset is downloaded at "_DATA/posetrack/posetrack_data/", run the following command to run our tracker on all videos on the supported datasets. This will run MaskRCNN, HMAR to create embeddings and run PHALP on these prepossessed data. 
@@ -62,16 +73,6 @@ However, you only need to run MaskRCNN and HMAR once, after that you can simply 
 To evaluate the tracking performance on ID switches, MOTA, and IDF1 and HOTA metrics, please run the following command.
 
 `python3 evaluate_PHALP.py out/Videos_results/results/ PHALP posetrack`
-
-## Demo
-
-Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
-
-`python3 demo_online.py --youtube_link xEH_5T9jMVU --start_frame 1250 --end_frame 1400`
-
-Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
-
-<p align="center"><img src="./utils/imgs/render_type.png" width="800"></p>
 
 
 ## Results ([Project site](http://people.eecs.berkeley.edu/~jathushan/PHALP/))

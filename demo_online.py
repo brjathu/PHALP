@@ -80,6 +80,8 @@ def test_tracker_online(opt, phalp_tracker, checkpoint=None):
             
             outputs                       = predictor(im)
             instances                     = outputs['instances']
+            instances                     = instances[instances.pred_classes==0]
+            instances                     = instances[instances.scores>opt.low_th_c]
             v                             = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
             v                             = v.draw_instance_predictions(instances.to("cpu"))
             
@@ -89,13 +91,12 @@ def test_tracker_online(opt, phalp_tracker, checkpoint=None):
             pred_masks                    = instances.pred_masks.cpu().numpy()
             pred_scores                   = instances.scores.cpu().numpy()
             
-            idx_                          = pred_classes==0
             full_embedding                = []
             uv_vector_list                = []
             detections                    = []
             
             h_th = 100; w_th = 50
-            for bbox, class_id, mask, score in zip(pred_bbox[idx_], pred_classes[idx_], pred_masks[idx_], pred_scores[idx_]):
+            for bbox, class_id, mask, score in zip(pred_bbox, pred_classes, pred_masks, pred_scores):
                 if score < opt.low_th_c or bbox[2]-bbox[0]<w_th or bbox[3]-bbox[1]<h_th: continue
 
                 mask_a              = mask.astype(int)*255
@@ -219,12 +220,13 @@ def test_tracker_online(opt, phalp_tracker, checkpoint=None):
                 rendered_, f_size  = render_frame_main_online(opt, phalp_tracker, final_visuals_dic[frame_key][2], opt.track_dataset, ["", ""], im, 
                                                        frame_key, final_visuals_dic[frame_key][0], final_visuals_dic[frame_key][1], final_visuals_dic[frame_key][3], 
                                                        final_visuals_dic[frame_key][4], final_visuals_dic[frame_key][5], final_visuals_dic[frame_key][6],  
-                                                       number_of_windows=4, downsample=opt.downsample, storage_folder="out/" + opt.storage_folder + "/_TEMP/", track_id=-100)      
+                                                       number_of_windows=4, downsample=opt.downsample, storage_folder="out/" + opt.storage_folder + "/_TEMP/", track_id=-100)   
                 if(video_created==0):
                     video_created  = 1
                     fourcc         = cv2.VideoWriter_fourcc(*'mp4v')
                     video_file     = cv2.VideoWriter("out/" + opt.storage_folder + "/PHALP_" + opt.track_dataset + "_" + "online" + ".mp4", fourcc, 15, frameSize=f_size)
                 video_file.write(rendered_)
+                del final_visuals_dic[frame_name]
                 
         if(opt.render):video_file.release()
 

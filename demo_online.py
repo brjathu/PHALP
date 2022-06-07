@@ -134,7 +134,7 @@ def test_tracker_online(opt, phalp_tracker, checkpoint=None):
                                                                                                        scale=np.reshape(np.array([max(scale_)]), (1, 1))*ratio,
                                                                                                        texture=uv_vector[:, :3, :, :]*5.0, render=False)
 
-                a = pred_joints_2d.reshape(-1,)/256
+                a = pred_joints_2d.reshape(-1,)/opt.res
                 a.contiguous()
                 b = pred_cam.view(-1,)
                 b.contiguous()

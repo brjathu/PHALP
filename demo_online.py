@@ -165,6 +165,7 @@ if __name__ == '__main__':
     parser.add_argument('--base_path', type=str)
     parser.add_argument('--video_seq', type=str, default='_DATA/posetrack/list_videos_val.npy')
     parser.add_argument('--all_videos', type=str2bool, nargs='?', const=True, default=True)
+    parser.add_argument('--store_mask', type=str2bool, nargs='?', const=True, default=True)
 
     parser.add_argument('--render', type=str2bool, nargs='?', const=True, default=False)
     parser.add_argument('--render_type', type=str, default='HUMAN_HEAD_FAST')

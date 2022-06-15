@@ -1,21 +1,9 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import DataLoader
-from torchvision.utils import save_image, make_grid
-
-import os
-import json
-import copy
-import heapq
-from PIL import Image
-from tqdm import tqdm
-import argparse
-import cv2
 import numpy as np
 
 from .backbones import resnet
+from .heads.mesh import *
 from .heads.smpl_head import SMPLHead
 from .heads.apperence_head import TextureHead
 from .heads.encoding_head import EncodingHead
@@ -25,7 +13,7 @@ from .utils import perspective_projection
 
 from yacs.config import CfgNode as CN
 import neural_renderer as nr
-from .renderer import Renderer
+# from .renderer import Renderer
 from models.pose_transformer import Pose_transformer
 
 from .utils import *
@@ -57,12 +45,12 @@ class HMAR(nn.Module):
         self.uv_sampler      = uv_sampler.view(-1, self.F, self.T*self.T, 2)
         self.backbone        = resnet(cfg.MODEL.BACKBONE, num_layers=self.cfg.MODEL.BACKBONE.NUM_LAYERS, pretrained=True, opt=self.opt)
         self.texture_head    = TextureHead(self.uv_sampler, self.cfg, img_H=img_H, img_W=img_W)
-        self.encoding_head   = EncodingHead(self.opt, img_H=img_H, img_W=img_W)    
+        self.encoding_head   = EncodingHead(opt=opt, img_H=img_H, img_W=img_W) 
     
     
-        smpl_params = {k.lower(): v for k,v in dict(cfg.SMPL).items()}
+        smpl_params  = {k.lower(): v for k,v in dict(cfg.SMPL).items()}
         joint_mapper = JointMapper(smpl_to_openpose(model_type=cfg.SMPL.MODEL_TYPE))
-        self.smpl = create(**smpl_params,
+        self.smpl    = create(**smpl_params,
                                   batch_size=1,
                                   joint_mapper = joint_mapper,
                                   create_betas=False,
@@ -82,24 +70,22 @@ class HMAR(nn.Module):
                                           light_intensity_directional=0.0,
                                           anti_aliasing=False, far=200)
         
-        self.py_render            = Renderer(focal_length=self.cfg.EXTRA.FOCAL_LENGTH, img_res=256, faces=self.faces_cpu)
+        # self.py_render            = Renderer(focal_length=self.cfg.EXTRA.FOCAL_LENGTH, img_res=256, faces=self.faces_cpu)
         self.nmr_size             = 256
         self.pyrender_size        = 256
         self.smpl_head            = SMPLHead(cfg)
         self.smpl_head.pool       = 'pooled'
         self.device               = "cuda"
         
-        
         if("P" in self.opt.predict):
-            self.pose_transformer = Pose_transformer(opt)
+            opt.pose_transformer_size = 2048
+            self.pose_transformer     = Pose_transformer(opt)
             checkpoint_file = torch.load("_DATA/hmmr_weights.pt")
-            
+                
             state_dict_filt = {k[11:]: v for k, v in checkpoint_file['model'].items() if ("relational" in k)}  
-            state_dict_filt = {k.replace('smplx', 'smpl'): v for k, v in state_dict_filt.items()}
             self.pose_transformer.relational.load_state_dict(state_dict_filt, strict=True)
 
-            state_dict_filt = {k[18:]: v for k, v in checkpoint_file['model'].items() if ("smpl_head_future" in k)}  
-            state_dict_filt = {k.replace('smplx', 'smpl'): v for k, v in state_dict_filt.items()}
+            state_dict_filt = {k[18:]: v for k, v in checkpoint_file['model'].items() if ("smplx_head_future" in k)}  
             self.pose_transformer.smpl_head_prediction.load_state_dict(state_dict_filt, strict=False)
 
 
@@ -111,7 +97,7 @@ class HMAR(nn.Module):
         pose_embeddings = feats.max(3)[0].max(2)[0]
         pose_embeddings = pose_embeddings.view(x.size(0),-1)
         with torch.no_grad():
-            pred_smpl_params, pred_cam, pred_smpl_params_list = self.smpl_head(pose_embeddings)
+            pred_smpl_params, _, _ = self.smpl_head(pose_embeddings)
 
         out = {
             "uv_image"  : uv_image,
@@ -119,8 +105,7 @@ class HMAR(nn.Module):
             "pose_emb"  : pose_embeddings,
             "pose_smpl" : pred_smpl_params,
         }
-        return out
-    
+        return out    
     
     def flow_to_texture(self, flow_map, img_x):
         batch_size = flow_map.size(0)
@@ -139,12 +124,12 @@ class HMAR(nn.Module):
 
     
     def render_3d(self, pose_embeddings, color, center=np.array([128, 128]), img_size = 256, scale = None, location=None, texture=None, image=None, use_image=False, render=True, full_shape=True, engine="NMR"):
-           
+        
         if(scale is not None): pass
         else: scale = np.ones((pose_embeddings.size(0), 1))*256
 
         with torch.no_grad():
-            pred_smpl_params, pred_cam, pred_smpl_params_list = self.smpl_head(pose_embeddings[:, 2048:].float())
+            pred_smpl_params, pred_cam, _ = self.smpl_head(pose_embeddings[:, 2048:].float())
 
         batch_size             = pose_embeddings.shape[0]
         dtype                  = pred_cam.dtype
@@ -159,8 +144,7 @@ class HMAR(nn.Module):
         else:
             pred_cam_t         = torch.stack([pred_cam[:,1], pred_cam[:,2], 2*focal_length[:, 0]/(pred_cam[:,0]*torch.tensor(scale[:, 0], dtype=dtype, device=self.device) + 1e-9)], dim=1)
             pred_cam_t[:, :2] += torch.tensor(center-img_size/2., dtype=dtype, device=self.device) * pred_cam_t[:, [2]] / focal_length
-        
-        
+
         # initialize camera params and mesh faces for NMR
         K = torch.eye(3, device='cuda')
         K[0, 0] = K[1, 1]  = self.cfg.EXTRA.FOCAL_LENGTH
@@ -178,7 +162,6 @@ class HMAR(nn.Module):
         # transform vertices to world coordinates
         pred_cam_t_bs         = pred_cam_t.unsqueeze(1).repeat(1, pred_vertices.size(1), 1)
         verts                 = pred_vertices + pred_cam_t_bs
-
 
         mask_model = []
         loc_       = 0
@@ -233,6 +216,7 @@ class HMAR(nn.Module):
                                                             translation=pred_cam_t.cuda(),
                                                             focal_length=focal_length / img_size,
                                                             camera_center=camera_center.cuda())  
+
             pred_keypoints_2d_smpl = (pred_keypoints_2d_smpl+0.5)*img_size
 
             return rgb_from_pred, [mask, mask_model, loc_], pred_keypoints_2d_smpl, pred_joints, pred_cam_t
@@ -240,9 +224,10 @@ class HMAR(nn.Module):
         if(render and engine=="PYR"):
             rgb_from_pred, validmask = self.py_render.visualize_all(pred_vertices.cpu().numpy(), pred_cam_t_bs.cpu().numpy(), color, image, use_image=use_image)
             return rgb_from_pred, validmask, 0, 0 
-    
+        
+        
     def reset_pyrender(self, image_size):
-        self.py_render = Renderer(focal_length=self.cfg.EXTRA.FOCAL_LENGTH, img_res=image_size, faces=self.faces_cpu)
+        self.py_render            = Renderer(focal_length=self.cfg.EXTRA.FOCAL_LENGTH, img_res=image_size, faces=self.faces_cpu)
         self.pyrender_size        = image_size
 
     def reset_nmr(self, image_size):
@@ -253,3 +238,17 @@ class HMAR(nn.Module):
                                            far=1000
                                           )   
         self.nmr_size      = image_size
+
+        
+  
+
+
+
+
+
+
+
+
+
+
+

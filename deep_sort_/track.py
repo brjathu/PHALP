@@ -4,12 +4,9 @@ Modified code from https://github.com/nwojke/deep_sort
 
 import numpy as np
 import copy
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import scipy.signal as signal
 from scipy.ndimage.filters import gaussian_filter1d
-
+from collections import deque
     
 class TrackState:
     """
@@ -28,176 +25,56 @@ class TrackState:
 
 class Track:
     """
-    A single target track with state space `(x, y, a, h)` and associated
-    velocities, where `(x, y)` is the center of the bounding box, `a` is the
-    aspect ratio and `h` is the height.
-
-    Parameters
-    ----------
-    mean : ndarray
-        Mean vector of the initial state distribution.
-    covariance : ndarray
-        Covariance matrix of the initial state distribution.
-    track_id : int
-        A unique track identifier.
-    n_init : int
-        Number of consecutive detections before the track is confirmed. The
-        track state is set to `Deleted` if a miss occurs within the first
-        `n_init` frames.
-    max_age : int
-        The maximum number of consecutive misses before the track state is
-        set to `Deleted`.
-    feature : Optional[ndarray]
-        Feature vector of the detection this track originates from. If not None,
-        this feature is added to the `features` cache.
-
-    Attributes
-    ----------
-    mean : ndarray
-        Mean vector of the initial state distribution.
-    covariance : ndarray
-        Covariance matrix of the initial state distribution.
-    track_id : int
-        A unique track identifier.
-    hits : int
-        Total number of measurement updates.
-    age : int
-        Total number of frames since first occurance.
-    time_since_update : int
-        Total number of frames since last measurement update.
-    state : TrackState
-        The current track state.
-    features : List[ndarray]
-        A cache of features. On each measurement update, the associated feature
-        vector is added to this list.
-
+    Mark this track as missed (no association at the current time step).
     """
 
-    def __init__(self, opt, track_id, n_init, max_age, feature=None, uv_map=None, bbox=None, detection_data=None, confidence=None, detection_id=None, dims=None, time=None):
+    def __init__(self, opt, track_id, n_init, max_age, detection_data=None, detection_id=None, dims=None):
         self.opt               = opt
         self.track_id          = track_id
         self.hits              = 1
         self.age               = 1
         self.time_since_update = 0
-
-        self.state = TrackState.Tentative            
-
+        self.time_init         = detection_data["time"]
+        self.state             = TrackState.Tentative            
+        
+        self._n_init           = n_init
+        self._max_age          = max_age
+        
         if(dims is not None):
             self.A_dim = dims[0]
             self.P_dim = dims[1]
             self.L_dim = dims[2]
         
-        self.phalp_uv_map        = uv_map
-        self.phalp_uv_map_       = [uv_map]
-        self.phalp_uv_predicted  = copy.deepcopy(self.phalp_uv_map)
-        self.phalp_uv_predicted_ = [copy.deepcopy(self.phalp_uv_map)]
-        
-        self.phalp_appe_features = []
-        self.phalp_pose_features = []
-        self.phalp_loca_features = []
-        self.phalp_time_features = []
-        self.phalp_bbox          = []
-        self.phalp_detection_id  = []
-        self.detection_data      = []
-        self.confidence_c        = []
-        if feature is not None:
+        self.track_data        = {"history": deque(maxlen=self.opt.track_history) , "prediction":{}}
+        for _ in range(self.opt.track_history):
+            self.track_data["history"].append(detection_data)
             
-            for i_ in range(self.opt.track_history):
-                self.phalp_appe_features.append(feature[:self.A_dim])
-                self.phalp_pose_features.append(feature[self.A_dim:self.A_dim+self.P_dim])
-                self.phalp_loca_features.append(feature[self.A_dim+self.P_dim:])
-                self.phalp_time_features.append(time)
-                self.phalp_bbox.append(bbox)
-                self.phalp_detection_id.append(detection_id)
-                self.detection_data.append(detection_data)
-                self.confidence_c.append(confidence[0])
-                
-        self._n_init    = n_init
-        self._max_age   = max_age
+        self.track_data['prediction']['appe'] = deque([detection_data['appe']], maxlen=self.opt.n_init+1)
+        self.track_data['prediction']['loca'] = deque([detection_data['loca']], maxlen=self.opt.n_init+1)
+        self.track_data['prediction']['pose'] = deque([detection_data['pose']], maxlen=self.opt.n_init+1)
+        self.track_data['prediction']['uv']   = deque([copy.deepcopy(detection_data['uv'])], maxlen=self.opt.n_init+1)
 
-        self.track_data = {
-                            "xy"   : self.detection_data[-1]['xy'],
-                            "bbox" : np.asarray(self.detection_data[-1]['bbox'], dtype=np.float),
-                          }
-        
-
-        self.phalp_pose_predicted_ = []
-        self.phalp_loca_predicted_ = []
-        self.phalp_features_       = []
-    
-        
     def predict(self, phalp_tracker, increase_age=True):
-        """Propagate the state distribution to the current time step using a
-        Kalman filter prediction step.
-
-        Parameters
-        ----------
-        kf : kalman_filter.KalmanFilter
-            The Kalman filter.
-
-        """
         if(increase_age):
-            self.age += 1
-            self.time_since_update += 1
+            self.age += 1; self.time_since_update += 1
             
     def add_predicted(self, appe=None, pose=None, loca=None, uv=None):
-        self.phalp_appe_predicted = copy.deepcopy(appe.numpy()) if(appe is not None) else copy.deepcopy(self.phalp_appe_features[-1])
-        self.phalp_pose_predicted = copy.deepcopy(pose.numpy()) if(pose is not None) else copy.deepcopy(self.phalp_pose_features[-1])
-        self.phalp_loca_predicted = copy.deepcopy(loca.numpy()) if(loca is not None) else copy.deepcopy(self.phalp_loca_features[-1])
-        self.phalp_features       = np.concatenate((self.phalp_appe_predicted, self.phalp_pose_predicted, self.phalp_loca_predicted), axis=0)
+        appe_predicted = copy.deepcopy(appe.numpy()) if(appe is not None) else copy.deepcopy(self.track_data['history'][-1]['appe'])
+        loca_predicted = copy.deepcopy(loca.numpy()) if(loca is not None) else copy.deepcopy(self.track_data['history'][-1]['loca'])
+        pose_predicted = copy.deepcopy(pose.numpy()) if(pose is not None) else copy.deepcopy(self.track_data['history'][-1]['pose'])
         
-        self.phalp_pose_predicted_.append(self.phalp_pose_predicted)
-        if(len(self.phalp_pose_predicted_)>self.opt.n_init+1): self.phalp_pose_predicted_ = self.phalp_pose_predicted_[1:]
-            
-        self.phalp_loca_predicted_.append(self.phalp_loca_predicted)
-        if(len(self.phalp_loca_predicted_)>self.opt.n_init+1): self.phalp_loca_predicted_ = self.phalp_loca_predicted_[1:]
-        
-        self.phalp_features_.append(self.phalp_features)
-        if(len(self.phalp_features_)>self.opt.n_init+1): self.phalp_features_ = self.phalp_features_[1:]
-        
-    def update(self, detection, detection_id, shot):
-        """Perform Kalman filter measurement update step and update the feature
-        cache.
+        self.track_data['prediction']['appe'].append(appe_predicted)
+        self.track_data['prediction']['loca'].append(loca_predicted)
+        self.track_data['prediction']['pose'].append(pose_predicted)
 
-        Parameters
-        ----------
-        kf : kalman_filter.KalmanFilter
-            The Kalman filter.
-        detection : Detection
-            The associated detection.
+    def update(self, detection, detection_id, shot):             
 
-        """
-        h = detection.tlwh[3]
-        w = detection.tlwh[2]                 
-
-        self.phalp_appe_features.append(detection.feature[:self.A_dim])
-        self.phalp_appe_features = copy.deepcopy(self.phalp_appe_features[1:])
-        self.phalp_pose_features.append(detection.feature[self.A_dim:self.A_dim+self.P_dim])
-        self.phalp_pose_features = copy.deepcopy(self.phalp_pose_features[1:])
-        self.phalp_loca_features.append(detection.feature[self.A_dim+self.P_dim:])
-        self.phalp_loca_features = copy.deepcopy(self.phalp_loca_features[1:])
-        if(shot==1): self.phalp_loca_features = [detection.feature[self.A_dim+self.P_dim:] for i in range(self.opt.track_history)]
-        self.phalp_time_features.append(detection.time)
-        self.phalp_time_features = copy.deepcopy(self.phalp_time_features[1:])
-        self.phalp_bbox.append(detection.tlwh)
-        self.phalp_bbox          = self.phalp_bbox[1:]
+        self.track_data["history"].append(copy.deepcopy(detection.detection_data))
         
-        self.confidence_c.append(detection.confidence_c)
-        self.confidence_c        = self.confidence_c[1:]
-        
-        
-        self.detection_data.append(detection.detection_data)
-        self.detection_data      = self.detection_data[1:]
-        self.phalp_detection_id.append(detection_id)
-        
-
-
-        self.phalp_uv_map                  = copy.deepcopy(detection.uv_map)
-        self.phalp_uv_map_.append(copy.deepcopy(detection.uv_map))
-        if(self.opt.render or "T" in self.opt.predict):
-            mixing_alpha_                      = self.opt.alpha*(detection.confidence_c**2)
-            ones_old                           = self.phalp_uv_predicted[3:, :, :]==1
-            ones_new                           = self.phalp_uv_map[3:, :, :]==1
+        if("T" in self.opt.predict):
+            mixing_alpha_                      = self.opt.alpha*(detection.detection_data['conf']**2)
+            ones_old                           = self.track_data['prediction']['uv'][-1][3:, :, :]==1
+            ones_new                           = self.track_data['history'][-1]['uv'][3:, :, :]==1
             ones_old                           = np.repeat(ones_old, 3, 0)
             ones_new                           = np.repeat(ones_new, 3, 0)
             ones_intersect                     = np.logical_and(ones_old, ones_new)
@@ -207,22 +84,13 @@ class Track:
             new_rgb_map                        = np.zeros((3, 256, 256))
             new_mask_map                       = np.zeros((1, 256, 256))-1
             new_mask_map[ones_union[:1, :, :]] = 1.0
-            new_rgb_map[ones_intersect]        = (1-mixing_alpha_)*self.phalp_uv_predicted[:3, :, :][ones_intersect] + mixing_alpha_*self.phalp_uv_map[:3, :, :][ones_intersect]
-            new_rgb_map[good_old_ones]         = self.phalp_uv_predicted[:3, :, :][good_old_ones] 
-            new_rgb_map[good_new_ones]         = self.phalp_uv_map[:3, :, :][good_new_ones] 
-            self.phalp_uv_predicted            = np.concatenate((new_rgb_map, new_mask_map), 0)
-            self.phalp_uv_predicted_.append(self.phalp_uv_predicted)
-            if(len(self.phalp_uv_predicted_)>self.opt.n_init+1): self.phalp_uv_predicted_ = self.phalp_uv_predicted_[1:]
+            new_rgb_map[ones_intersect]        = (1-mixing_alpha_)*self.track_data['prediction']['uv'][-1][:3, :, :][ones_intersect] + mixing_alpha_*self.track_data['history'][-1]['uv'][:3, :, :][ones_intersect]
+            new_rgb_map[good_old_ones]         = self.track_data['prediction']['uv'][-1][:3, :, :][good_old_ones] 
+            new_rgb_map[good_new_ones]         = self.track_data['history'][-1]['uv'][:3, :, :][good_new_ones] 
+            self.track_data['prediction']['uv'].append(np.concatenate((new_rgb_map , new_mask_map), 0))
         else:
-            self.phalp_uv_predicted            = self.phalp_uv_map
+            self.track_data['prediction']['uv'].append(self.track_data['history'][-1]['uv'])
             
-            
-            
-        self.track_data = {
-                            "xy"   : detection.detection_data['xy'],
-                            "bbox" : np.asarray(detection.detection_data['bbox'], dtype=np.float64)
-                          }
-        
         
         self.hits += 1
         self.time_since_update = 0

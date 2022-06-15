@@ -5,7 +5,6 @@
 import os
 import dill
 import pickle
-import argparse
 
 def convert(old_pkl):
     """

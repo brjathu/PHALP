@@ -5,8 +5,6 @@ Modified code from https://github.com/nwojke/deep_sort
 from __future__ import absolute_import
 import numpy as np
 from sklearn.utils.linear_assignment_ import linear_assignment
-import time
-import copy
 
 INFTY_COST = 1e+5
 
@@ -23,7 +21,7 @@ def min_cost_matching(
         return [], track_indices, detection_indices, 0 
 
     cost_matrix_a = distance_metric(tracks, detections, track_indices, detection_indices)
-    cost_matrix = cost_matrix_a
+    cost_matrix   = cost_matrix_a
 
     cost_matrix[cost_matrix > max_distance] = max_distance + 1e-5
     cost_matrix                             = np.log(cost_matrix)
@@ -49,7 +47,7 @@ def min_cost_matching(
             
     return matches, unmatched_tracks, unmatched_detections, cost_matrix
 
-def matching_simple(distance_metric, max_distance, cascade_depth, tracks, detections,track_indices=None, detection_indices=None):
+def matching_simple(distance_metric, max_distance, cascade_depth, tracks, detections, track_indices=None, detection_indices=None):
     
     if track_indices is None:
         track_indices = list(range(len(tracks)))

@@ -1,235 +1,142 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import DataLoader
-from torchvision.utils import save_image, make_grid
-
-from detectron2 import model_zoo
-from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
-from detectron2.utils.visualizer import Visualizer
-from detectron2.data import MetadataCatalog, DatasetCatalog
-from detectron2.projects import point_rend
-
 import os
-import traceback
-import warnings
-import json
-import copy
-import argparse
-import joblib
 import cv2
 import time
+import joblib
+import argparse
+import warnings
+import traceback
 import numpy as np
-from PIL import Image
-from tqdm import tqdm
-from yacs.config import CfgNode as CN
-from pytube import YouTube
 
-from utils.make_video import render_frame_main, render_frame_main_online
-from utils.utils import str2bool, get_colors
-from utils.utils import FrameExtractor
-
+from PHALP import PHALP_tracker
 from deep_sort_ import nn_matching
 from deep_sort_.detection import Detection
 from deep_sort_.tracker import Tracker
 
-from PHALP import PHALP_tracker
-from utils.utils_dataset import process_image, process_mask
+from utils.make_video import render_frame_main_online
+from utils.utils import FrameExtractor, str2bool
+from pytube import YouTube
 
-warnings.filterwarnings("ignore")
-
-RGB_tuples = get_colors()
+warnings.filterwarnings('ignore')
+  
+        
+def test_tracker(opt, phalp_tracker: PHALP_tracker):
     
-def test_tracker_online(opt, phalp_tracker, checkpoint=None):
-
-    os.makedirs("out/" + opt.storage_folder, exist_ok=True)    
-    os.makedirs("out/" + opt.storage_folder + "/results", exist_ok=True)       
-
-    cfg = get_cfg()
-    cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml"))   
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-    cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST   = 0.4
-    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml")
-    predictor         = DefaultPredictor(cfg)
-
+    eval_keys       = ['tracked_ids', 'tracked_bbox', 'tid', 'bbox', 'tracked_time']
+    history_keys    = ['appe', 'loca', 'pose', 'uv'] if opt.render else []
+    prediction_keys = ['prediction_uv', 'prediction_pose', 'prediction_loca'] if opt.render else []
+    extra_keys_1    = ['center', 'scale', 'size', 'img_path', 'img_name', 'mask_name', 'conf']
+    extra_keys_2    = ['smpl', '3d_joints', 'camera', 'embedding']
+    history_keys    = history_keys + extra_keys_1 + extra_keys_2
+    visual_store_   = eval_keys + history_keys + prediction_keys
+    tmp_keys_       = ['uv', 'prediction_uv', 'prediction_pose', 'prediction_loca']
+    
+                                                
+    if(not(opt.overwrite) and os.path.isfile('out/' + opt.storage_folder + '/results/' + str(opt.video_seq) + '.pkl')): return 0
+    print(opt.storage_folder + '/results/' + str(opt.video_seq))
+    
+    try:
+        os.makedirs('out/' + opt.storage_folder, exist_ok=True)  
+        os.makedirs('out/' + opt.storage_folder + '/results', exist_ok=True)  
+        os.makedirs('out/' + opt.storage_folder + '/_TMP', exist_ok=True)  
+    except: pass
+    
     phalp_tracker.eval()
     phalp_tracker.HMAR.reset_nmr(opt.res)    
-
-    metric           = nn_matching.NearestNeighborDistanceMetric(opt, opt.hungarian_th, opt.past_lookback)
-    tracker          = Tracker(opt, metric, max_age=opt.max_age_track, n_init=opt.n_init, phalp_tracker=phalp_tracker, dims=[4096, 4096, 99])  
-
+    
+    metric  = nn_matching.NearestNeighborDistanceMetric(opt, opt.hungarian_th, opt.past_lookback)
+    tracker = Tracker(opt, metric, max_age=opt.max_age_track, n_init=opt.n_init, phalp_tracker=phalp_tracker, dims=[4096, 4096, 99])  
+        
     try: 
-
-        list_of_frames    = np.sort([i for i in os.listdir(opt.base_path + "/" + opt.video_seq[0]) if ".jpg" in i])
-        tracked_frames    = []
-        final_results_dic = {}
-        final_visuals_dic = {}        
-        video_created     = 0
-        for t_, frame_name in tqdm(enumerate(list_of_frames)):
+        
+        main_path_to_frames = opt.base_path + '/' + opt.video_seq + opt.sample
+        list_of_frames      = np.sort([i for i in os.listdir(main_path_to_frames) if '.jpg' in i])
+        list_of_frames      = list_of_frames if opt.start_frame==-1 else list_of_frames[opt.start_frame:opt.end_frame]
             
-            ##### detection part
-            im                            = cv2.imread(opt.base_path + "/" + opt.video_seq[0] + "/" + frame_name)
-            img_height, img_width, _      = im.shape
-            new_image_size                = max(img_height, img_width)
-            delta_w                       = new_image_size - img_width
-            delta_h                       = new_image_size - img_height
-            top, bottom                   = delta_h//2, delta_h-(delta_h//2)
-            left, right                   = delta_w//2, delta_w-(delta_w//2)
-            
-            outputs                       = predictor(im)
-            instances                     = outputs['instances']
-            instances                     = instances[instances.pred_classes==0]
-            instances                     = instances[instances.scores>opt.low_th_c]
-            v                             = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-            v                             = v.draw_instance_predictions(instances.to("cpu"))
-            
-            centers_, scales_, bboxes_, masks_, confs_, classes_ = [], [], [], [], [], []
-            pred_bbox                     = instances.pred_boxes.tensor.cpu().numpy()
-            pred_classes                  = instances.pred_classes.cpu().numpy()
-            pred_masks                    = instances.pred_masks.cpu().numpy()
-            pred_scores                   = instances.scores.cpu().numpy()
-            
-            full_embedding                = []
-            uv_vector_list                = []
-            detections                    = []
-            
-            h_th = 100; w_th = 50
-            for bbox, class_id, mask, score in zip(pred_bbox, pred_classes, pred_masks, pred_scores):
-                if score < opt.low_th_c or bbox[2]-bbox[0]<w_th or bbox[3]-bbox[1]<h_th: continue
+        tracked_frames          = []
+        final_visuals_dic       = {}
 
-                mask_a              = mask.astype(int)*255
-                mask_a              = np.expand_dims(mask_a, 2)
-                mask_a              = np.repeat(mask_a, 3, 2)
-                
-                ##### HMAR part
-                center_             = np.array([(bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2])
-                scale_              = np.array([(bbox[2] - bbox[0]), (bbox[3] - bbox[1])])
-                mask_tmp            = process_mask(mask_a.astype(np.uint8), center_, 1.0*np.max(scale_))
-                image_tmp           = process_image(im, center_, 1.0*np.max(scale_))
-                masked_image        = torch.cat((image_tmp, mask_tmp[:1, :, :]), 0)
-                ratio               = 1.0/int(new_image_size)*opt.res
-                
-                with torch.no_grad():
-                    
-                    hmar_out        = phalp_tracker.HMAR(masked_image.unsqueeze(0).cuda()) 
-                    uv_image        = hmar_out['uv_image'][:, :3, :, :]/5.0
-                    uv_mask         = hmar_out['uv_image'][:, 3:, :, :]
-                    zeros_          = uv_mask==0
-                    ones_           = torch.logical_not(zeros_)
-                    zeros_          = zeros_.repeat(1, 3, 1, 1)
-                    ones_           = ones_.repeat(1, 3, 1, 1)
-                    uv_image[zeros_]= 0.0
-                    uv_mask[zeros_[:, :1, :, :]] = -1.0
-                    uv_mask[ones_[:, :1, :, :]]  = 1.0
-                    uv_vector       = torch.cat((uv_image, uv_mask), 1)
-                    pose_embedding  = hmar_out['pose_emb']
-                    appe_embedding  = phalp_tracker.HMAR.autoencoder_hmar(uv_vector, en=True)
-                    appe_embedding  = appe_embedding.view(1, -1)
-                    rendered_image, mask_, pred_joints_2d, pred_joints, pred_cam  = phalp_tracker.HMAR.render_3d(torch.cat((pose_embedding, pose_embedding), 1),
-                                                                                                       np.array([[1.0, 0, 0]]),
-                                                                                                       center=(center_ + [left, top])*ratio,
-                                                                                                       img_size=opt.res,
-                                                                                                       scale=np.reshape(np.array([max(scale_)]), (1, 1))*ratio,
-                                                                                                       texture=uv_vector[:, :3, :, :]*5.0, render=False)
+        for t_, frame_name in enumerate(list_of_frames):
+            if(opt.verbose): 
+                print('\n\n\nTime: ', opt.video_seq, frame_name, t_, time.time()-time_ if t_>0 else 0 )
+                time_ = time.time()
+            
+            image_frame               = cv2.imread(main_path_to_frames + '/' + frame_name)
+            img_height, img_width, _  = image_frame.shape
+            new_image_size            = max(img_height, img_width)
+            top, left                 = (new_image_size - img_height)//2, (new_image_size - img_width)//2,
+            measurments               = [img_height, img_width, new_image_size, left, top]
 
-                a = pred_joints_2d.reshape(-1,)/opt.res
-                a.contiguous()
-                b = pred_cam.view(-1,)
-                b.contiguous()
-                loca_embedding  = torch.cat((a, b, b, b), 0)
-                
-                appe_emb_ = appe_embedding[0].cpu()
-                pose_emb_ = pose_embedding[0].cpu()
-                loca_emb_ = loca_embedding.cpu()
+            ############ detection ##############
+            pred_bbox, pred_masks, pred_scores, mask_names, gt = phalp_tracker.get_detections(image_frame, frame_name, t_)
+            
+            ############ HMAR ##############
+            detections = []
+            for bbox, mask, score, mask_name, gt_id in zip(pred_bbox, pred_masks, pred_scores, mask_names, gt):
+                if bbox[2]-bbox[0]<50 or bbox[3]-bbox[1]<100: continue
+                detection_data = phalp_tracker.get_human_apl(image_frame, mask, bbox, score, [main_path_to_frames, frame_name], mask_name, t_, measurments, gt_id)
+                detections.append(Detection(detection_data))
 
-                full_embedding = torch.cat((appe_emb_, pose_emb_, pose_emb_, loca_emb_), 0)
-                
-                detection_data   = {
-                                      "bbox"            : [bbox[0], bbox[1], (bbox[2] - bbox[0]), (bbox[3] - bbox[1])],
-                                      "conf_c"          : score, 
-                                      "embedding"       : full_embedding, 
-                                      "uv_vector"       : uv_vector[0].cpu(), 
-                                      "center"          : center_,
-                                      "scale"           : scale_,
-                                      "size"            : [img_height, img_width],
-                                      "img_name"        : frame_name,
-                                      "mask_name"       : frame_name,
-                                      "ground_truth"    : 1,
-                                      "time"            : t_,
-                                   }
-                a = Detection(detection_data)
-                detections.append(a)
-
+            ############ tracking ##############
             tracker.predict()
-            matches = tracker.update(detections, t_, frame_name, 0)
-            
+            tracker.update(detections, t_, frame_name, 0)
 
-            tracked_ids = [];         tracked_bbox = [];     tracked_appe_single = [];     tracked_appe = []
-            tracked_pose_single = []; tracked_pose = [];     tracked_loca = [];            tracked_time = []
-            tracked_ids_ = [];        tracked_bbox_ = [];    tracked_mask_ = []
+            ############ record the results ##############
+            final_visuals_dic.setdefault(frame_name, {'time': t_})
+            if(opt.render): final_visuals_dic[frame_name]['frame'] = image_frame
+            for key_ in visual_store_: final_visuals_dic[frame_name][key_] = []
+            
             for tracks_ in tracker.tracks:
                 if(frame_name not in tracked_frames): tracked_frames.append(frame_name)
                 if(not(tracks_.is_confirmed())): continue
-                track_id       = tracks_.track_id
-                bbox_          = tracks_.phalp_bbox[-1]   
-                tracked_ids.append(track_id)
-                tracked_bbox.append([bbox_[0], bbox_[1], bbox_[2], bbox_[3]])
+                
+                track_id        = tracks_.track_id
+                track_data_hist = tracks_.track_data['history'][-1]
+                track_data_pred = tracks_.track_data['prediction']
 
-                if(opt.render): 
-                    tracked_appe_single.append(tracks_.phalp_uv_map); tracked_appe.append(tracks_.phalp_uv_predicted); 
-                    tracked_pose_single.append(tracks_.phalp_pose_features[-1]); tracked_pose.append(tracks_.phalp_pose_predicted); 
-                    tracked_loca.append(tracks_.phalp_loca_predicted); tracked_time.append(tracks_.time_since_update); 
+                final_visuals_dic[frame_name]['tid'].append(track_id)
+                final_visuals_dic[frame_name]['bbox'].append(track_data_hist['bbox'])
+                final_visuals_dic[frame_name]['tracked_time'].append(tracks_.time_since_update)
+
+                for hkey_ in history_keys:     final_visuals_dic[frame_name][hkey_].append(track_data_hist[hkey_])
+                for pkey_ in prediction_keys:  final_visuals_dic[frame_name][pkey_].append(track_data_pred[pkey_.split('_')[1]][-1])
 
                 if(tracks_.time_since_update==0):
-                    tracked_ids_.append(track_id)
-                    tracked_bbox_.append([bbox_[0], bbox_[1], bbox_[2], bbox_[3]])
-                    tracked_mask_.append(tracks_.detection_data[-1]['mask_name'])
+                    final_visuals_dic[frame_name]['tracked_ids'].append(track_id)
+                    final_visuals_dic[frame_name]['tracked_bbox'].append(track_data_hist['bbox'])
+                    
                     if(tracks_.hits==opt.n_init):
-                        for ia in range(opt.n_init-1):
-                            try:
-                                final_results_dic[tracked_frames[-2-ia]][0].append(track_id)
-                                final_results_dic[tracked_frames[-2-ia]][1].append(tracks_.phalp_bbox[-2-ia])
+                        for pt in range(opt.n_init-1):
+                            track_data_hist_ = tracks_.track_data['history'][-2-pt]
+                            track_data_pred_ = tracks_.track_data['prediction']
+                            frame_name_      = tracked_frames[-2-pt]
+                            final_visuals_dic[frame_name_]['tid'].append(track_id)
+                            final_visuals_dic[frame_name_]['bbox'].append(track_data_hist_['bbox'])
+                            final_visuals_dic[frame_name_]['tracked_ids'].append(track_id)
+                            final_visuals_dic[frame_name_]['tracked_bbox'].append(track_data_hist_['bbox'])
+                            final_visuals_dic[frame_name_]['tracked_time'].append(0)
 
-                                if(opt.render): 
-                                    final_visuals_dic[tracked_frames[-2-ia]][0].append(track_id)
-                                    final_visuals_dic[tracked_frames[-2-ia]][1].append(tracks_.phalp_bbox[-2-ia])
-                                    final_visuals_dic[tracked_frames[-2-ia]][3].append(tracks_.phalp_loca_predicted_[-2-ia])
-                                    final_visuals_dic[tracked_frames[-2-ia]][4][0].append(tracks_.phalp_pose_predicted_[-2-ia])
-                                    final_visuals_dic[tracked_frames[-2-ia]][4][1].append(tracks_.phalp_pose_features[-2-ia])
-                                    final_visuals_dic[tracked_frames[-2-ia]][5][0].append(tracks_.phalp_uv_map_[-2-ia])
-                                    final_visuals_dic[tracked_frames[-2-ia]][5][1].append(tracks_.phalp_uv_predicted_[-2-ia])
-                                    final_visuals_dic[tracked_frames[-2-ia]][6].append(0)
-                            except:
-                                final_results_dic.setdefault(tracked_frames[-2-ia], [[track_id], tracks_.phalp_bbox[-2-ia], t_-ia-1]) 
-                                if(opt.render): 
-                                    final_visuals_dic.setdefault(tracked_frames[-2-ia], 
-                                                                 [[track_id], tracks_.phalp_bbox[-2-ia], t_-ia-1, tracks_.phalp_loca_predicted_[-2-ia], [tracks_.phalp_pose_predicted_[-2-ia], 
-                                                                 tracks_.phalp_pose_features[-2-ia]], [tracks_.phalp_uv_map_[-2-ia], tracks_.phalp_uv_predicted_[-2-ia]], [0]]) 
+                            for hkey_ in history_keys:    final_visuals_dic[frame_name_][hkey_].append(track_data_hist_[hkey_])
+                            for pkey_ in prediction_keys: final_visuals_dic[frame_name_][pkey_].append(track_data_pred_[pkey_.split('_')[1]][-1])
 
+                            
+                            
+            ############ save the video ##############
+            if(opt.render and t_>=opt.n_init):
+                d_ = opt.n_init+1 if(t_+1==len(list_of_frames)) else 1
+                for t__ in range(t_, t_+d_):
+                    frame_key          = list_of_frames[t__-opt.n_init]
+                    rendered_, f_size  = render_frame_main_online(opt, phalp_tracker, frame_key, final_visuals_dic[frame_key], opt.track_dataset, track_id=-100)      
+                    if(t__-opt.n_init==0):
+                        file_name      = 'out/' + opt.storage_folder + '/PHALP_' + str(opt.video_seq) + '_'+ str(opt.detection_type) + '.mp4'
+                        video_file     = cv2.VideoWriter(file_name, cv2.VideoWriter_fourcc(*'mp4v'), 30, frameSize=f_size)
+                    video_file.write(rendered_)
+                    del final_visuals_dic[frame_key]['frame']
+                    for tkey_ in tmp_keys_:  del final_visuals_dic[frame_key][tkey_] 
 
-
-            if(frame_name in final_results_dic.keys() or frame_name in final_visuals_dic.keys()): print("Error!") # error check
-            else: 
-                final_results_dic.setdefault(frame_name, [tracked_ids_, tracked_bbox_, t_]) 
-                if(opt.render): final_visuals_dic.setdefault(frame_name, [tracked_ids, tracked_bbox, t_, tracked_loca, [tracked_pose, tracked_pose_single], [tracked_appe, tracked_appe_single], tracked_time]) 
-
-            if(opt.render):
-                frame_key = frame_name
-                rendered_, f_size  = render_frame_main_online(opt, phalp_tracker, final_visuals_dic[frame_key][2], opt.track_dataset, ["", ""], im, 
-                                                       frame_key, final_visuals_dic[frame_key][0], final_visuals_dic[frame_key][1], final_visuals_dic[frame_key][3], 
-                                                       final_visuals_dic[frame_key][4], final_visuals_dic[frame_key][5], final_visuals_dic[frame_key][6],  
-                                                       number_of_windows=4, downsample=opt.downsample, storage_folder="out/" + opt.storage_folder + "/_TEMP/", track_id=-100)   
-                if(video_created==0):
-                    video_created  = 1
-                    fourcc         = cv2.VideoWriter_fourcc(*'mp4v')
-                    video_file     = cv2.VideoWriter("out/" + opt.storage_folder + "/PHALP_" + opt.track_dataset + "_" + "online" + ".mp4", fourcc, 15, frameSize=f_size)
-                video_file.write(rendered_)
-                del final_visuals_dic[frame_name]
-                
-        if(opt.render):video_file.release()
-
+        joblib.dump(final_visuals_dic, 'out/' + opt.storage_folder + '/results/' + opt.track_dataset + "_" + str(opt.video_seq) + opt.post_fix  + '.pkl')
+        if(opt.use_gt): joblib.dump(tracker.tracked_cost, 'out/' + opt.storage_folder + '/results/' + str(opt.video_seq) + '_' + str(opt.start_frame) + '_distance.pkl')
+        if(opt.render): video_file.release()
+        
     except Exception as e: 
         print(e)
         print(traceback.format_exc())     
@@ -237,82 +144,71 @@ def test_tracker_online(opt, phalp_tracker, checkpoint=None):
 
 if __name__ == '__main__':
     
-    parser_demo = argparse.ArgumentParser(description='Demo')
-    parser_demo.add_argument('--youtube_link', type=str, default='xEH_5T9jMVU')
-    parser_demo.add_argument('--start_frame', type=int, default=0)
-    parser_demo.add_argument('--end_frame', type=int, default=100)
-    opt         = parser_demo.parse_args()
+    parser = argparse.ArgumentParser(description='PHALP_pixel Tracker')
+    parser.add_argument('--batch_id', type=int, default='-1')
+    parser.add_argument('--track_dataset', type=str, default='posetrack')
+    parser.add_argument('--predict', type=str, default='APL')
+    parser.add_argument('--storage_folder', type=str, default='Videos_v20.000')
+    parser.add_argument('--distance_type', type=str, default='A5')
+    parser.add_argument('--use_gt', type=str2bool, nargs='?', const=True, default=False)
+    parser.add_argument('--overwrite', type=str2bool, nargs='?', const=True, default=False)
 
-    os.makedirs("_DATA/detections/", exist_ok=True) 
-    os.makedirs("_DATA/embeddings/", exist_ok=True) 
-    os.makedirs("out/", exist_ok=True) 
+    parser.add_argument('--alpha', type=float, default=0.1)
+    parser.add_argument('--low_th_c', type=float, default=0.95)
+    parser.add_argument('--hungarian_th', type=float, default=100.0)
+    parser.add_argument('--track_history', type=int, default=7)
+    parser.add_argument('--max_age_track', type=int, default=20)
+    parser.add_argument('--n_init',  type=int, default=1)
+    parser.add_argument('--max_ids', type=int, default=50)
+    parser.add_argument('--verbose', type=str2bool, nargs='?', const=True, default=False)
     
-    # ########## Youtube Demo videos
-    track_dataset    = "demo"
-    links            = [opt.youtube_link] # you can add more links if you want
-    videos           = ["youtube_"+str(i) for i,j in enumerate(links)]
-    base_path_frames = "_DATA/DEMO/frames/youtube/"
+    parser.add_argument('--base_path', type=str)
+    parser.add_argument('--video_seq', type=str, default='_DATA/posetrack/list_videos_val.npy')
+    parser.add_argument('--all_videos', type=str2bool, nargs='?', const=True, default=True)
 
-    os.makedirs("_DATA/detections/" + track_dataset, exist_ok=True)    
+    parser.add_argument('--render', type=str2bool, nargs='?', const=True, default=False)
+    parser.add_argument('--render_type', type=str, default='HUMAN_HEAD_FAST')
+    parser.add_argument('--render_up_scale', type=int, default=2)
+    parser.add_argument('--res', type=int, default=256)
+    parser.add_argument('--downsample',  type=int, default=1)
+    
+    parser.add_argument('--encode_type', type=str, default='3c')
+    parser.add_argument('--cva_type', type=str, default='least_square')
+    parser.add_argument('--past_lookback', type=int, default=1)
+    parser.add_argument('--mask_type', type=str, default='feat')
+    parser.add_argument('--detection_type', type=str, default='mask2')
+    parser.add_argument('--start_frame', type=int, default='1000')
+    parser.add_argument('--end_frame', type=int, default='1100')
+    parser.add_argument('--store_extra_info', type=str2bool, nargs='?', const=True, default=False)
+    
+    opt                   = parser.parse_args()
+    opt.sample            = ''
+    opt.post_fix          = ''
+    
+    phalp_tracker         = PHALP_tracker(opt)
+    phalp_tracker.cuda()
+    phalp_tracker.eval()
+
+    if(opt.track_dataset=='youtube'):   
         
-        
-    for vid, video in enumerate(videos):        
-        
-        os.system("rm -rf " + base_path_frames + video)
-        os.makedirs(base_path_frames + video, exist_ok=True)    
-        youtube_video = YouTube('https://www.youtube.com/watch?v=' + links[vid])
+        video_id = "xEH_5T9jMVU"
+        video    = "youtube_" + video_id
+
+        os.system("rm -rf " + "_DEMO/" + video)
+        os.makedirs("_DEMO/" + video, exist_ok=True)    
+        os.makedirs("_DEMO/" + video + "/img", exist_ok=True)    
+        youtube_video = YouTube('https://www.youtube.com/watch?v=' + video_id)
         print(f'Title: {youtube_video.title}')
         print(f'Duration: {youtube_video.length / 60:.2f} minutes')
-        youtube_video.streams.get_by_itag(136).download(output_path = base_path_frames + video, filename="youtube.mp4")
-        fe = FrameExtractor(base_path_frames + video + "/youtube.mp4")
+        youtube_video.streams.get_by_itag(136).download(output_path = "_DEMO/" + video, filename="youtube.mp4")
+        fe = FrameExtractor("_DEMO/" + video + "/youtube.mp4")
         print('Number of frames: ', fe.n_frames)
-        fe.extract_frames(every_x_frame=1, img_name='', dest_path=base_path_frames + video + "/", frames=[opt.start_frame, opt.end_frame])
+        fe.extract_frames(every_x_frame=1, img_name='', dest_path= "_DEMO/" + video + "/img/", start_frame=1100, end_frame=1300)
 
-        os.system("rm -rf " + "_DATA/detections/" + track_dataset + "/" + video)
-        os.makedirs("_DATA/detections/" + track_dataset + "/" + video, exist_ok=True)    
-        
-        frames_path            = base_path_frames + video
-        detections_path        = "_DATA/detections/" + track_dataset + "/" + video + "/"
+        opt.base_path       = '_DEMO/'
+        opt.video_seq       = video
+        opt.sample          =  '/img/'
+        test_tracker(opt, phalp_tracker)
 
-        opt.version            = "v1"  
-        opt.track_dataset      = track_dataset
-        opt.predict            = "TLP"
-        opt.base_path          = base_path_frames 
-        opt.mask_path          = detections_path
-        opt.storage_folder     = "Videos_results"
-        opt.distance_type      = "EQ_A"
-        
-        opt.track_history      = 7
-        opt.low_th_c           = 0.9
-        opt.alpha              = 0.1
-        opt.hungarian_th       = 100
-        opt.max_age_track      = 24
-        opt.n_init             = 5
-        opt.max_ids            = 50
-        opt.window             = 1
-        opt.batch_id           = -1
-        opt.video_seq          = [video]
-        
-        opt.render_type        = "HUMAN_FULL_FAST"
-        opt.render             = True
-        opt.res                = 256
-        opt.render_up_scale    = 2
-        opt.downsample         = 1
-        
-        opt.verbose            = False
-        opt.use_gt             = False
-        opt.encode_type        = "3c"
-        opt.past_lookback      = 1
-        opt.cva_type           = "least_square"
-        opt.mask_type          = "feat"
-        
-        phalp_tracker          = PHALP_tracker(opt)
-        phalp_tracker.cuda()
-        phalp_tracker.eval()
-        phalp_tracker.HMAR.reset_nmr(256)
 
-        test_tracker_online(opt, phalp_tracker)
-
-        
-        
-        
+            

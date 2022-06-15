@@ -4,12 +4,11 @@ Modified code from https://github.com/nwojke/deep_sort
 
 from __future__ import absolute_import
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 import numpy as np
 from . import linear_assignment
 from .track import Track
+
+np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
 
 
 class Tracker:
@@ -73,12 +72,10 @@ class Tracker:
             A list of detections at the current time step.
 
         """
-        # Run matching cascade.
         matches, unmatched_tracks, unmatched_detections, statistics = self._match(detections)
         self.tracked_cost[frame_t] = [statistics[0], matches, unmatched_tracks, unmatched_detections, statistics[1], statistics[2], statistics[3], statistics[4]] 
-        if(self.opt.verbose): print(np.array(statistics[0]).astype(int))
-        
-        
+        if(self.opt.verbose): print(np.round(np.array(statistics[0]), 2))
+
         for track_idx, detection_idx in matches:
             self.tracks[track_idx].update(detections[detection_idx], detection_idx, shot)
         self.accumulate_vectors([i[0] for i in matches], features=self.opt.predict)
@@ -92,26 +89,32 @@ class Tracker:
             
         self.tracks = [t for t in self.tracks if not t.is_deleted()]
         active_targets = [t.track_id for t in self.tracks if t.is_confirmed() or t.is_tentative()]
-        features, uv_maps, targets = [], [], []
+        appe_features, loca_features, pose_features, uv_maps, targets = [], [], [], [], []
         for track in self.tracks:
             if not (track.is_confirmed() or track.is_tentative()): continue
                     
-            features += [track.phalp_features]
-            uv_maps  += [track.phalp_uv_predicted]
-            targets  += [track.track_id]
+                         
+            appe_features += [track.track_data['prediction']['appe'][-1]]
+            loca_features += [track.track_data['prediction']['loca'][-1]]
+            pose_features += [track.track_data['prediction']['pose'][-1]]
+            uv_maps       += [track.track_data['prediction']['uv'][-1]]
+            targets       += [track.track_id]
             
-        self.metric.partial_fit(np.asarray(features), np.asarray(uv_maps), np.asarray(targets), active_targets)
+            
+        self.metric.partial_fit(np.asarray(appe_features), np.asarray(loca_features), np.asarray(pose_features), np.asarray(uv_maps), np.asarray(targets), active_targets)
         
         return matches
         
-    
+
     def _match(self, detections):
 
         def gated_metric(tracks, dets, track_indices, detection_indices):
-            features          = np.array([dets[i].feature for i in detection_indices])
-            uv_maps           = np.array([dets[i].uv_map  for i in detection_indices])
+            appe_emb          = np.array([dets[i].detection_data['appe'] for i in detection_indices])
+            loca_emb          = np.array([dets[i].detection_data['loca'] for i in detection_indices])
+            pose_emb          = np.array([dets[i].detection_data['pose'] for i in detection_indices])
+            uv_maps           = np.array([dets[i].detection_data['uv'] for i in detection_indices])
             targets           = np.array([tracks[i].track_id for i in track_indices])
-            cost_matrix       = self.metric.distance([features, uv_maps], targets, dims=[self.A_dim, self.P_dim, self.L_dim], phalp_tracker=self.phalp_tracker)
+            cost_matrix       = self.metric.distance([appe_emb, loca_emb, pose_emb, uv_maps], targets, dims=[self.A_dim, self.P_dim, self.L_dim], phalp_tracker=self.phalp_tracker)
 
             return cost_matrix
 
@@ -119,10 +122,10 @@ class Tracker:
         confirmed_tracks = [i for i, t in enumerate(self.tracks) if t.is_confirmed() or t.is_tentative()]
         
         # Associate confirmed tracks using appearance features.
-        matches, unmatched_tracks, unmatched_detections, cost_matrix = linear_assignment.matching_simple( gated_metric, self.metric.matching_threshold, self.max_age, self.tracks, detections, confirmed_tracks)
+        matches, unmatched_tracks, unmatched_detections, cost_matrix = linear_assignment.matching_simple(gated_metric, self.metric.matching_threshold, self.max_age, self.tracks, detections, confirmed_tracks)
 
 
-        track_gt   = [t.detection_data[-1]['ground_truth'] for i, t in enumerate(self.tracks) if t.is_confirmed() or t.is_tentative()]
+        track_gt   = [t.track_data['history'][-1]['ground_truth'] for i, t in enumerate(self.tracks) if t.is_confirmed() or t.is_tentative()]
         detect_gt  = [d.detection_data['ground_truth'] for i, d in enumerate(detections)]
 
         track_idt  = [i for i, t in enumerate(self.tracks) if t.is_confirmed() or t.is_tentative()]
@@ -145,14 +148,9 @@ class Tracker:
     
     def _initiate_track(self, detection, detection_id):
         new_track = Track(self.opt, self._next_id, self.n_init, self.max_age, 
-                          feature=detection.feature, 
-                          uv_map=detection.uv_map, 
-                          bbox=detection.tlwh, 
                           detection_data=detection.detection_data, 
-                          confidence=[detection.confidence_c], 
                           detection_id=detection_id, 
-                          dims=[self.A_dim, self.P_dim, self.L_dim], 
-                          time=detection.time)
+                          dims=[self.A_dim, self.P_dim, self.L_dim])
         new_track.add_predicted()
         self.tracks.append(new_track)
         self._next_id += 1
@@ -165,14 +163,15 @@ class Tracker:
 
         a_features = []; p_features = []; l_features = []; t_features = []; l_time     = []; confidence = []; is_tracks  = 0; p_data = []
         for track_idx in track_ids:
-            t_features.append(self.tracks[track_idx].phalp_time_features)
+            t_features.append([self.tracks[track_idx].track_data['history'][i]['time'] for i in range(self.opt.track_history)])
             l_time.append(self.tracks[track_idx].time_since_update)
                 
-            if("L" in features):  l_features.append(self.tracks[track_idx].phalp_loca_features)
-            if("P" in features):  p_features.append(self.tracks[track_idx].phalp_pose_features)
-            if("P" in features):  t_id = self.tracks[track_idx].track_id; p_data.append([[data['xy'][0], data['xy'][1], data['scale'], data['scale'], data['time'], t_id] for data in self.tracks[track_idx].detection_data])
-            if("L" in features):  confidence.append(self.tracks[track_idx].confidence_c)
+            if("L" in features):  l_features.append(np.array([self.tracks[track_idx].track_data['history'][i]['loca'] for i in range(self.opt.track_history)]))
+            if("P" in features):  p_features.append(np.array([self.tracks[track_idx].track_data['history'][i]['pose'] for i in range(self.opt.track_history)]))
+            if("P" in features):  t_id = self.tracks[track_idx].track_id; p_data.append([[data['xy'][0], data['xy'][1], data['scale'], data['scale'], data['time'], t_id] for data in self.tracks[track_idx].track_data['history']])
+            if("L" in features):  confidence.append(np.array([self.tracks[track_idx].track_data['history'][i]['conf'] for i in range(self.opt.track_history)]))
             is_tracks                       = 1
+
             
         l_time         = np.array(l_time)
         t_features     = np.array(t_features)
@@ -180,6 +179,8 @@ class Tracker:
         if("P" in features): p_data         = np.array(p_data)
         if("L" in features): l_features     = np.array(l_features)
         if("L" in features): confidence     = np.array(confidence)
+        
+        
         if(is_tracks):
             with torch.no_grad():
                 if("P" in features): p_pred = self.phalp_tracker.forward_for_tracking([p_features, p_data, t_features], "P", l_time)
@@ -189,5 +190,4 @@ class Tracker:
                 self.tracks[track_idx].add_predicted(pose=p_pred[p_id] if("P" in features) else None, 
                                                      loca=l_pred[p_id] if("L" in features) else None)
                 
-                
-                
+        

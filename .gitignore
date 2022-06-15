@@ -1,28 +1,20 @@
 # experiment folders
-experiments/
-experiments_temp/
+out/
+wandb/
 
 # installation folders
-apex/
-detectron2/
 _DATA/
+_DEMO/
 _TEMP/
 _BACKUP/
-out/
+external/neural_renderer/build/
+external/_BACKUP/
+deep_sort/
 *.npy
 *.pickle
 *.avi
 *.pth
-_BACKUP/
-external/multiperson/
-external/opengl/
-external/pytube/
-external/TrackEval/
-hmr/external/
-pyopengl/
-video_out/
-save/
-wandb/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

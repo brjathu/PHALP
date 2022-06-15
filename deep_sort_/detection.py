@@ -30,12 +30,7 @@ class Detection(object):
     def __init__(self, detection_data):
         self.detection_data           = detection_data
         self.tlwh                     = np.asarray(detection_data['bbox'], dtype=np.float64)
-        self.confidence_c             = float(detection_data['conf_c'])
-        self.feature                  = np.asarray(detection_data['embedding'], dtype=np.float64)
-        self.uv_map                   = np.asarray(detection_data['uv_vector'], dtype=np.float64)
-        self.time                     = detection_data['time']
-        self.mask_name                = detection_data['mask_name']
-                      
+
         image_size                    = self.detection_data['size']
         img_height, img_width         = float(image_size[0]), float(image_size[1])
         new_image_size                = max(img_height, img_width)

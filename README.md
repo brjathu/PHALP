@@ -14,45 +14,19 @@ This code repository provides a code implementation for our paper PHALP, with in
 We recommend creating a clean [conda](https://docs.conda.io/) environment and install all dependencies.
 You can do this as follows:
 ```
-conda env create -f scripts/_environment.yml
+conda env create -f scripts/_env.yaml
 ```
 
 After the installation is complete you can activate the conda environment by running:
 ```
 conda activate PHALP
 ```
-Please set your CUDA_HOME to the PHALP environment. `export CUDA_HOME=/home/<USER NAME>/anaconda3/envs/PHALP/`
-Install PyOpenGL, TrackEval, PyTube and Neural Mesh Renderer from their respective repositories:
 
-```
-./scripts/setup.sh
-```
-
-Additionally, install [Detectron2](https://github.com/facebookresearch/detectron2) from the official repository.
-```
-python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu113/torch1.10/index.html
-```
-		
-
-## Download Weights and Data
-
-Please download this folder and extract inside the main repository.
-
-- [_DATA/](https://drive.google.com/uc?id=1jEUahdb0WU5FOTllTEfFZrU4yQhshlQL)
-
-or you can run the following command.
-
-`curl -L -o '_DATA.zip' 'https://drive.google.com/uc?id=1jEUahdb0WU5FOTllTEfFZrU4yQhshlQL&confirm=t'; unzip _DATA.zip`
-
-Besides these files, you also need to download the [neutral *SMPL* model](http://smplify.is.tue.mpg.de). Please go to the website for the corresponding project and register to get access to the downloads section. Create a folder `_DATA/models/smpl/` and place the model there. Otherwise, you can also run:
-
-`python3 utils/convert_smpl.py`
-    
 ## Demo
 
 Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
 
-`python3 demo_online.py --youtube_link xEH_5T9jMVU --start_frame 1250 --end_frame 1400`
+`./scripts/_PHALP.sh`
 
 Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
 
@@ -61,11 +35,9 @@ Also, you can render with different renders (NMR or PyRender) with different vis
 
 ## Testing
 
-Once the posetrack dataset is downloaded at "_DATA/posetrack/posetrack_data/", run the following command to run our tracker on all videos on the supported datasets. This will run MaskRCNN, HMAR to create embeddings and run PHALP on these prepossessed data. 
+Once the posetrack dataset is downloaded at "_DATA/posetrack_2018/", run the following command to run our tracker on all videos on the supported datasets. This will run MaskRCNN, HMAR to create embeddings and run PHALP on these prepossessed data. 
 
-`python test_datasets.py --track_dataset posetrack`
-
-However, you only need to run MaskRCNN and HMAR once, after that you can simply run `./scripts/_PHALP.sh`.   
+`python test_datasets.py --track_dataset posetrack-val`  
 
 
 ## Evaluation

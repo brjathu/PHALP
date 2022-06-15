@@ -3,12 +3,10 @@ Modified code from https://github.com/nwojke/deep_sort
 """
 
 import numpy as np
-from scipy.spatial import distance
 import copy
-import torch
 
 def _pdist_l2(a, b):
-
+    """Compute pair-wise squared l2 distances between points in `a` and `b`.""" 
     a, b = np.asarray(a), np.asarray(b)
     if len(a) == 0 or len(b) == 0:
         return np.zeros((len(a), len(b)))
@@ -18,63 +16,80 @@ def _pdist_l2(a, b):
 
     return r2
 
-
 def _pdist(opt, a, b, dims, phalp_tracker):
 
-    a_dim, p_dim, l_dim = dims[0], dims[1], dims[2]
-    a_feat, a_uv        = [], []
+    a_appe, a_loca, a_pose, a_uv        = [], [], [], []
     for i_ in range(len(a)):
-        a_feat.append(a[i_][0]); a_uv.append(a[i_][1])
+        a_appe.append(a[i_][0]); 
+        a_loca.append(a[i_][1]); 
+        a_pose.append(a[i_][2]); 
+        a_uv.append(a[i_][3])
 
-    b_feat, b_uv    = b[0], b[1]
-    a_uv, b_uv      = np.asarray(a_uv), copy.deepcopy(np.asarray(b_uv))
-    a_feat, b_feat  = np.asarray(a_feat), copy.deepcopy(np.asarray(b_feat))
+    b_appe, b_loca, b_pose, b_uv    = b[0], b[1], b[2], b[3]
+    a_uv, b_uv      = np.asarray(a_uv),   copy.deepcopy(np.asarray(b_uv))
+    a_appe, b_appe  = np.asarray(a_appe), copy.deepcopy(np.asarray(b_appe))
+    a_loca, b_loca  = np.asarray(a_loca), copy.deepcopy(np.asarray(b_loca))
+    a_pose, b_pose  = np.asarray(a_pose), copy.deepcopy(np.asarray(b_pose))
  
-
-    track_pose      = a_feat[:, a_dim:a_dim+p_dim]
-    detect_pose     = b_feat[:, a_dim:a_dim+p_dim]
+    track_pose      = a_pose
+    detect_pose     = b_pose
     pose_distance   = _pdist_l2(track_pose[:, 2048:], detect_pose[:, 2048:])
     
 
-    track_location  = np.reshape(a_feat[:, a_dim+p_dim:a_dim+p_dim+l_dim-9], (-1, 45, 2))
-    detect_location = np.reshape(b_feat[:, a_dim+p_dim:a_dim+p_dim+l_dim-9], (-1, 45, 2))
+    track_location  = np.reshape(a_loca[:, :-9], (-1, 45, 2))
+    detect_location = np.reshape(b_loca[:, :-9], (-1, 45, 2))
     track_loc       = track_location[:, 44, :]
     detect_loc      = detect_location[:, 44, :]
     loc_distance    = np.sqrt(_pdist_l2(track_loc, detect_loc))
 
-    al              = np.reshape(a_feat[:, -9:], (-1, 3, 3))
-    bl              = np.reshape(b_feat[:, -9:], (-1, 3, 3))
+    al              = np.reshape(a_loca[:, -9:], (-1, 3, 3))
+    bl              = np.reshape(b_loca[:, -9:], (-1, 3, 3))
     c_x             = al[:, [1], 0]
     c_y             = al[:, [1], 1]
     c_xy            = np.sqrt((c_x**2+c_y**2))
-    c_xy            = np.tile(c_xy, (1, len(b_feat)))
+    c_xy            = np.tile(c_xy, (1, len(b_appe)))
     
     al_nearness     = al[:, [0], -1]
     bl_nearness     = bl[:, [0], -1]
     cl_nearness     = al[:, [1], -1]
-    nearness        = np.matmul(bl_nearness, 1.0/al_nearness).T
+    nearness        = np.matmul(al_nearness, 1.0/bl_nearness.T)
     loc_            = nearness>1
     nearness[loc_]  = 1.0/nearness[loc_]
     n_log           = -np.log(nearness)
     cn_log          = np.abs(np.log(1.0/cl_nearness)) 
-    c_nlog          = np.tile(cn_log, (1, len(b_feat)))
+    c_nlog          = np.tile(cn_log, (1, len(b_appe)))
 
-    r_texture = np.zeros((len(a_feat), len(b_feat)))
-    for ix in range(len(a_feat)):
-        accc = copy.deepcopy(a_uv[[ix]])
-        bccc = copy.deepcopy(b_uv)
-        xu, yu, cu = phalp_tracker.get_uv_distance2(accc, bccc)
-        r_texture[ix, :]  = np.sum((xu-yu)**2, 1)
+    r_texture = np.zeros((len(a_appe), len(b_appe)))
+    if("T" in opt.predict):
+        for ix in range(len(a_appe)):
+            for iy in range(len(b_appe)):
+                accc = copy.deepcopy(a_uv[ix])
+                bccc = copy.deepcopy(b_uv[iy])
+                xu, yu, cu = phalp_tracker.get_uv_distance(accc, bccc)
+                r_texture[ix, iy]  = np.sum((xu-yu)**2)*100
+                if(opt.distance_type=="EQ_010x"): 
+                    r_texture[ix, iy] *= np.exp((1-cu)/2)
+            
+    elif("A" in opt.predict):
+        track_appe      = a_appe/10**3
+        detect_appe     = b_appe/10**3
+        r_texture       = _pdist_l2(track_appe, detect_appe)
+        
+    if(opt.distance_type=="A0"): return r_texture
+    if(opt.distance_type=="P0"): return pose_distance
+    if(opt.distance_type=="L0"): return loc_distance
+    if(opt.distance_type=="LC"): return c_xy
+    if(opt.distance_type=="N0"): return n_log
+    if(opt.distance_type=="NC"): return c_nlog
     
-    if(opt.distance_type=="EQ_A"):        
-        betas = [4.8301, 1.8885, 0.4651, 4.5472]; c=1       
-        loc_                = pose_distance>1.2
-        pose_distance[loc_] = 1.2
-
+    if(opt.distance_type=="EQ_010"):  
+        betas     = [3.8303, 1.5207, 0.4930, 4.5831]; c=1
+        pose_distance[pose_distance>1.2] = 1.2
+   
     xy_cxy_distance     = loc_distance/(0.1 + c*np.tanh(c_xy))/betas[2]
     n_cn_log_distance   = n_log/(0.1 + c*np.tanh(c_nlog))/betas[3]
     ruv2                = (1+r_texture*betas[0]) * (1+pose_distance*betas[1]) * np.exp(xy_cxy_distance) * np.exp(n_cn_log_distance) 
-
+        
     return ruv2
     
 def _nn_euclidean_distance_min(opt, x, y, dims, phalp_tracker):
@@ -84,7 +99,7 @@ def _nn_euclidean_distance_min(opt, x, y, dims, phalp_tracker):
     ----------
     x : ndarray
         A matrix of N row-vectors (sample points).
-    y : ndarray
+    y : ndarray./
         A matrix of M row-vectors (query points).
 
     Returns
@@ -131,7 +146,7 @@ class NearestNeighborDistanceMetric(object):
         self.samples            = {}
         
         
-    def partial_fit(self, features, uv_maps, targets, active_targets):
+    def partial_fit(self, appe_features, loca_features, pose_features, uv_maps, targets, active_targets):
         """Update the distance metric with new data.
 
         Parameters
@@ -144,14 +159,14 @@ class NearestNeighborDistanceMetric(object):
             A list of targets that are currently present in the scene.
 
         """
-        for feature, uv_map, target in zip(features, uv_maps, targets):
-            self.samples.setdefault(target, []).append([feature, uv_map])
+        for appe_feature, loca_feature, pose_feature, uv_map, target in zip(appe_features, loca_features, pose_features, uv_maps, targets):
+            self.samples.setdefault(target, []).append([appe_feature, loca_feature, pose_feature, uv_map])
             if self.budget is not None:
                 self.samples[target] = self.samples[target][-self.budget:]
         
         self.samples = {k: self.samples[k] for k in active_targets}
 
-    def distance(self, features_uvmap, targets, dims=None, phalp_tracker=None):
+    def distance(self, detection_features, targets, dims=None, phalp_tracker=None):
         """Compute distance between features and targets.
 
         Parameters
@@ -169,8 +184,8 @@ class NearestNeighborDistanceMetric(object):
             `targets[i]` and `features[j]`.
 
         """
-        cost_matrix_a = np.zeros((len(targets), len(features_uvmap[0])))
+        cost_matrix_a = np.zeros((len(targets), len(detection_features[0])))
         for i, target in enumerate(targets):
-            cost_matrix_a[i, :] = self._metric(self.opt, self.samples[target], features_uvmap, dims, phalp_tracker)
+            cost_matrix_a[i, :] = self._metric(self.opt, self.samples[target], detection_features, dims, phalp_tracker)
         
         return cost_matrix_a

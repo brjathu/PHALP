@@ -1,16 +1,8 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import os
-from PIL import Image
-import cv2
-import torch
-import json
-import pickle
-import copy
 from tqdm import tqdm
 import motmetrics as mm
 from utils.utils_measure import _from_dense
-import external.TrackEval.trackeval as trackeval
+import trackeval as trackeval
 import sys
 from tqdm import tqdm
 import joblib
@@ -52,9 +44,7 @@ def evaluate_trackers(results_dir, method="phalp", dataset="posetrack", make_vid
                     
     print("Total annoated frames ", total_annoated_frames)
     print("Total detected frames ", total_detected_frames)
-    joblib.dump(data_all, results_dir + '/'+str(dataset)+'_'+str(method)+'.pkl')
-    if(make_video==2): make_videos_for_eval(data_all, base_dir, results_dir, method=method)
-        
+    joblib.dump(data_all, results_dir + '/'+str(dataset)+'_'+str(method)+'.pkl')        
         
     # #########################################################################################################
     # #########################################################################################################

@@ -308,7 +308,7 @@ class PHALP_tracker(nn.Module):
             "smpl_mean_params.npz"     : "https://drive.google.com/file/d/11mMhMmPJqtDNoOQWA_B4neVpOW_3unCE/view?usp=sharing",
             "J_regressor_h36m.npy"     : "https://drive.google.com/file/d/1I0QZqGJpyP7Hv5BypmxqX60gwjX2nPNn/view?usp=sharing",
             "hmar_v2_weights.pth"      : "https://drive.google.com/file/d/1_wZcPv8MxPoZyEGA9rI5ayXiB7Fhhj4b/view?usp=sharing",
-            "hmmr_v2_weights.pt"          : "https://drive.google.com/file/d/1hMjFoyVkoHIiYJBndvCoy2fs9T8j-ULU/view?usp=sharing",
+            "hmmr_v2_weights.pt"       : "https://drive.google.com/file/d/1hMjFoyVkoHIiYJBndvCoy2fs9T8j-ULU/view?usp=sharing",
         }
         
         for file_name, url in download_files.items():

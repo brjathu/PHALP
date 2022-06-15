@@ -266,11 +266,14 @@ class PHALP_tracker(nn.Module):
 
             if(self.opt.render): 
                 visualizer            = Visualizer(image_to_write[:, :, ::-1], MetadataCatalog.get(self.detectron2_cfg.DATASETS.TRAIN[0]), scale=1.2)
-                if(self.opt.store_mask):  cv2.imwrite("out/" + self.opt.storage_folder + "/_TMP/" + self.opt.video_seq + "_" + frame_name, visualizer.draw_instance_predictions(instances.to("cpu")).get_image()[:, :, ::-1])
+                if(self.opt.store_mask): cv2.imwrite("out/" + self.opt.storage_folder + "/_TMP/" + self.opt.video_seq + "_" + frame_name, visualizer.draw_instance_predictions(instances.to("cpu")).get_image()[:, :, ::-1])
             
             for i in range(instances.pred_classes.shape[0]):
                 mask_name_ = os.path.join("out/" + self.opt.storage_folder + "/_TMP/", self.opt.video_seq + '%s_%02d.png' % (frame_name.split('.')[0], i))
                 mask_names.append(mask_name_)
+                if(self.opt.store_mask): 
+                    mask_bw = instances.pred_masks[i].cpu().numpy()
+                    cv2.imwrite(mask_name_, mask_bw.astype(int)*255)
 
             pred_bbox      = instances.pred_boxes.tensor.cpu().numpy()
             pred_masks     = instances.pred_masks.cpu().numpy()

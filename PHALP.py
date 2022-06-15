@@ -30,7 +30,7 @@ class PHALP_tracker(nn.Module):
         self.opt        = opt
         self.HMAR       = HMAR('utils/config.yaml', self.opt)
         self.device     = torch.device('cuda')
-        checkpoint_file = torch.load('_DATA/hmar2_weights.pth')
+        checkpoint_file = torch.load('_DATA/hmar_v2_weights.pth')
         state_dict_filt = {}
         for k, v in checkpoint_file['model'].items():
             if ("encoding_head" in k or "texture_head" in k or "backbone" in k or "smplx_head" in k): 
@@ -307,12 +307,10 @@ class PHALP_tracker(nn.Module):
             "SMPL_to_J19.pkl"          : "https://drive.google.com/file/d/1UWsrBc5XH1ZkB_cfIR9aJVGtwE_0NOPP/view?usp=sharing",
             "smpl_mean_params.npz"     : "https://drive.google.com/file/d/11mMhMmPJqtDNoOQWA_B4neVpOW_3unCE/view?usp=sharing",
             "J_regressor_h36m.npy"     : "https://drive.google.com/file/d/1I0QZqGJpyP7Hv5BypmxqX60gwjX2nPNn/view?usp=sharing",
-            "hmar2_weights.pth"         : "https://drive.google.com/file/d/1_wZcPv8MxPoZyEGA9rI5ayXiB7Fhhj4b/view?usp=sharing",
-            "hmmr_weights.pt"          : "https://drive.google.com/file/d/1hMjFoyVkoHIiYJBndvCoy2fs9T8j-ULU/view?usp=sharing",
-            "fmap_256.npy"             : "https://drive.google.com/file/d/13Ok0xeBs-eXDMd51RxunntP9944XRjw8/view?usp=sharing",
-
-
+            "hmar_v2_weights.pth"      : "https://drive.google.com/file/d/1_wZcPv8MxPoZyEGA9rI5ayXiB7Fhhj4b/view?usp=sharing",
+            "hmmr_v2_weights.pt"          : "https://drive.google.com/file/d/1hMjFoyVkoHIiYJBndvCoy2fs9T8j-ULU/view?usp=sharing",
         }
+        
         for file_name, url in download_files.items():
             if not os.path.exists("_DATA/" + file_name):
                 print("Downloading file: " + file_name)

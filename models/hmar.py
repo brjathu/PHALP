@@ -80,7 +80,7 @@ class HMAR(nn.Module):
         if("P" in self.opt.predict):
             opt.pose_transformer_size = 2048
             self.pose_transformer     = Pose_transformer(opt)
-            checkpoint_file = torch.load("_DATA/hmmr_weights.pt")
+            checkpoint_file = torch.load("_DATA/hmmr_v2_weights.pt")
                 
             state_dict_filt = {k[11:]: v for k, v in checkpoint_file['model'].items() if ("relational" in k)}  
             self.pose_transformer.relational.load_state_dict(state_dict_filt, strict=True)

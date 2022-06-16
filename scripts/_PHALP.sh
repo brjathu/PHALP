@@ -2,6 +2,7 @@
 
 python demo_online.py \
 --track_dataset      "youtube" \
+--youtube_id         "xEH_5T9jMVU" \
 --storage_folder     "Videos_v1" \
 --predict            "TPL" \
 --distance_type      "EQ_010" \
@@ -18,7 +19,7 @@ python demo_online.py \
 --render             True \
 --res                256 \
 --render_up_scale    2 \
---verbose            True \
+--verbose            False \
 --overwrite          True \
 --use_gt             False \
 --batch_id           -1 \

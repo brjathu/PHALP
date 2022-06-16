@@ -164,6 +164,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--base_path', type=str)
     parser.add_argument('--video_seq', type=str, default='_DATA/posetrack/list_videos_val.npy')
+    parser.add_argument('--youtube_id', type=str, default="xEH_5T9jMVU")
     parser.add_argument('--all_videos', type=str2bool, nargs='?', const=True, default=True)
     parser.add_argument('--store_mask', type=str2bool, nargs='?', const=True, default=True)
 
@@ -192,7 +193,7 @@ if __name__ == '__main__':
 
     if(opt.track_dataset=='youtube'):   
         
-        video_id = "xEH_5T9jMVU"
+        video_id = opt.youtube_id
         video    = "youtube_" + video_id
 
         os.system("rm -rf " + "_DEMO/" + video)

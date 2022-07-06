@@ -70,7 +70,10 @@ class Track:
     def update(self, detection, detection_id, shot):             
 
         self.track_data["history"].append(copy.deepcopy(detection.detection_data))
-        
+        if(shot==1): 
+            for tx in range(self.opt.track_history):
+                self.track_data["history"][-1-tx]['loca'] = copy.deepcopy(detection.detection_data['loca'])
+
         if("T" in self.opt.predict):
             mixing_alpha_                      = self.opt.alpha*(detection.detection_data['conf']**2)
             ones_old                           = self.track_data['prediction']['uv'][-1][3:, :, :]==1

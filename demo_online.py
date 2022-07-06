@@ -51,7 +51,8 @@ def test_tracker(opt, phalp_tracker: PHALP_tracker):
         main_path_to_frames = opt.base_path + '/' + opt.video_seq + opt.sample
         list_of_frames      = np.sort([i for i in os.listdir(main_path_to_frames) if '.jpg' in i])
         list_of_frames      = list_of_frames if opt.start_frame==-1 else list_of_frames[opt.start_frame:opt.end_frame]
-            
+        list_of_shots       = phalp_tracker.get_list_of_shots(main_path_to_frames, list_of_frames)
+        
         tracked_frames          = []
         final_visuals_dic       = {}
 
@@ -65,6 +66,7 @@ def test_tracker(opt, phalp_tracker: PHALP_tracker):
             new_image_size            = max(img_height, img_width)
             top, left                 = (new_image_size - img_height)//2, (new_image_size - img_width)//2,
             measurments               = [img_height, img_width, new_image_size, left, top]
+            opt.shot                  = 1 if t_ in list_of_shots else 0
 
             ############ detection ##############
             pred_bbox, pred_masks, pred_scores, mask_names, gt = phalp_tracker.get_detections(image_frame, frame_name, t_)
@@ -78,10 +80,10 @@ def test_tracker(opt, phalp_tracker: PHALP_tracker):
 
             ############ tracking ##############
             tracker.predict()
-            tracker.update(detections, t_, frame_name, 0)
+            tracker.update(detections, t_, frame_name, opt.shot)
 
             ############ record the results ##############
-            final_visuals_dic.setdefault(frame_name, {'time': t_})
+            final_visuals_dic.setdefault(frame_name, {'time': t_, 'shot': opt.shot})
             if(opt.render): final_visuals_dic[frame_name]['frame'] = image_frame
             for key_ in visual_store_: final_visuals_dic[frame_name][key_] = []
             
@@ -126,6 +128,7 @@ def test_tracker(opt, phalp_tracker: PHALP_tracker):
                 for t__ in range(t_, t_+d_):
                     frame_key          = list_of_frames[t__-opt.n_init]
                     rendered_, f_size  = render_frame_main_online(opt, phalp_tracker, frame_key, final_visuals_dic[frame_key], opt.track_dataset, track_id=-100)      
+                    if(t__-opt.n_init in list_of_shots): cv2.rectangle(rendered_, (0,0), (f_size[0], f_size[1]), (0,0,255), 4)
                     if(t__-opt.n_init==0):
                         file_name      = 'out/' + opt.storage_folder + '/PHALP_' + str(opt.video_seq) + '_'+ str(opt.detection_type) + '.mp4'
                         video_file     = cv2.VideoWriter(file_name, cv2.VideoWriter_fourcc(*'mp4v'), 30, frameSize=f_size)
@@ -161,6 +164,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_init',  type=int, default=1)
     parser.add_argument('--max_ids', type=int, default=50)
     parser.add_argument('--verbose', type=str2bool, nargs='?', const=True, default=False)
+    parser.add_argument('--detect_shots', type=str2bool, nargs='?', const=True, default=False)
     
     parser.add_argument('--base_path', type=str)
     parser.add_argument('--video_seq', type=str, default='_DATA/posetrack/list_videos_val.npy')

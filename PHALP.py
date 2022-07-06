@@ -18,6 +18,7 @@ from models.utils import *
 
 from utils.utils_dataset import process_image, process_mask
 from utils.utils import get_prediction_interval
+from scenedetect import detect, ContentDetector
 
 class PHALP_tracker(nn.Module):
 
@@ -282,6 +283,27 @@ class PHALP_tracker(nn.Module):
         ground_truth = [1 for i in list(range(len(pred_scores)))]
 
         return pred_bbox, pred_masks, pred_scores, mask_names, ground_truth
+
+    def get_list_of_shots(self, main_path_to_frames, list_of_frames):
+        list_of_shots    = []
+        if(self.opt.detect_shots):
+            video_tmp_name   = 'out/' + self.opt.storage_folder + "/_TMP/" + str(self.opt.video_seq) + ".mp4"
+            for ft_, fname_ in enumerate(list_of_frames):
+                im_ = cv2.imread(main_path_to_frames + '/' + fname_)
+                if(ft_==0): video_file = cv2.VideoWriter(video_tmp_name, cv2.VideoWriter_fourcc(*'mp4v'), 24, frameSize=(im_.shape[1], im_.shape[0]))
+                video_file.write(im_)
+            video_file.release()
+            try:    scene_list = detect(video_tmp_name, ContentDetector())
+            except: pass
+            os.system("rm " + video_tmp_name)
+            for scene in scene_list:
+                print(scene)
+                list_of_shots.append(scene[0].get_frames())
+                list_of_shots.append(scene[1].get_frames())
+            list_of_shots = np.unique(list_of_shots)
+            list_of_shots = list_of_shots[1:-1]
+        return list_of_shots
+
 
     def cached_download_from_drive(self):
         """Download a file from Google Drive if it doesn't exist yet.

@@ -85,6 +85,13 @@ def _pdist(opt, a, b, dims, phalp_tracker):
     if(opt.distance_type=="EQ_010"):  
         betas     = [3.8303, 1.5207, 0.4930, 4.5831]; c=1
         pose_distance[pose_distance>1.2] = 1.2
+        if(opt.shot==1): 
+            # For best performance under the shot change scenario
+            # you can set look_back to 20.
+            betas           = [7.8303, 1.5207, 1e100, 1e100]; c=1    
+            track_appe      = a_appe/10**3
+            detect_appe     = b_appe/10**3
+            r_texture       = _pdist_l2(track_appe, detect_appe)
    
     xy_cxy_distance     = loc_distance/(0.1 + c*np.tanh(c_xy))/betas[2]
     n_cn_log_distance   = n_log/(0.1 + c*np.tanh(c_nlog))/betas[3]

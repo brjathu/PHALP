@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# for a shot change video, try --youtube_id "xEH_5T9jMVU" 
+
 python demo_online.py \
 --track_dataset      "youtube" \
 --youtube_id         "xEH_5T9jMVU" \
@@ -7,6 +9,7 @@ python demo_online.py \
 --predict            "TPL" \
 --distance_type      "EQ_010" \
 --encode_type        "4c" \
+--detect_shots       True \
 --all_videos         True \
 --track_history      7 \
 --past_lookback      1 \

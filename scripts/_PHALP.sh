@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# for a shot change video, try --youtube_id "xEH_5T9jMVU" 
+# for a shot change video, try --youtube_id "2VxpRal7wJE" 
 
 python demo_online.py \
 --track_dataset      "youtube" \

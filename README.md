@@ -55,6 +55,7 @@ We evaluated our method on PoseTrack, MuPoTs and AVA datasets. Our results show 
 <!-- <p align="center"><img src="./utils/imgs/PHALP_10.gif" width="800"></p> -->
 <p align="center"><img src="./utils/imgs/PHALP_1.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_2.gif" width="800"></p>
+<p align="center"><img src="./utils/imgs/PHALP_8.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_3.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_4.gif" width="800"></p>
 <p align="center"><img src="./utils/imgs/PHALP_5.gif" width="800"></p>

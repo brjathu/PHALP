@@ -28,14 +28,14 @@ if __name__ == '__main__':
     parser.add_argument('--max_age_track', type=int, default=20)
     parser.add_argument('--n_init',  type=int, default=1)
     parser.add_argument('--max_ids', type=int, default=50)
-    parser.add_argument('--window',  type=int, default=1)
     parser.add_argument('--verbose', type=str2bool, nargs='?', const=True, default=False)
+    parser.add_argument('--detect_shots', type=str2bool, nargs='?', const=True, default=False)
     
     parser.add_argument('--base_path', type=str)
-    parser.add_argument('--mask_path', type=str)
     parser.add_argument('--video_seq', type=str, default='_DATA/posetrack/list_videos_val.npy')
+    parser.add_argument('--youtube_id', type=str, default="xEH_5T9jMVU")
     parser.add_argument('--all_videos', type=str2bool, nargs='?', const=True, default=True)
-    parser.add_argument('--version', type=str, default='v1')
+    parser.add_argument('--store_mask', type=str2bool, nargs='?', const=True, default=True)
 
     parser.add_argument('--render', type=str2bool, nargs='?', const=True, default=False)
     parser.add_argument('--render_type', type=str, default='HUMAN_HEAD_FAST')

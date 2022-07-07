@@ -26,7 +26,7 @@ conda activate PHALP
 
 Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
 
-`./scripts/_PHALP.sh`
+`./scripts/_demo.sh`
 
 Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
 
@@ -37,7 +37,7 @@ Also, you can render with different renders (NMR or PyRender) with different vis
 
 Once the posetrack dataset is downloaded at "_DATA/posetrack_2018/", run the following command to run our tracker on all videos on the supported datasets. This will run MaskRCNN, HMAR to create embeddings and run PHALP on these prepossessed data. 
 
-`python test_datasets.py --track_dataset posetrack-val`  
+`./scripts/_posetrack.sh`
 
 
 ## Evaluation

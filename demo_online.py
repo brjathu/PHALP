@@ -6,6 +6,7 @@ import argparse
 import warnings
 import traceback
 import numpy as np
+from tqdm import tqdm
 
 from PHALP import PHALP_tracker
 from deep_sort_ import nn_matching
@@ -56,7 +57,7 @@ def test_tracker(opt, phalp_tracker: PHALP_tracker):
         tracked_frames          = []
         final_visuals_dic       = {}
 
-        for t_, frame_name in enumerate(list_of_frames):
+        for t_, frame_name in enumerate(tqdm(list_of_frames)):
             if(opt.verbose): 
                 print('\n\n\nTime: ', opt.video_seq, frame_name, t_, time.time()-time_ if t_>0 else 0 )
                 time_ = time.time()

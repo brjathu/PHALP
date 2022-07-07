@@ -25,5 +25,6 @@ dependencies:
     - ipython
     - gdown
     - dill
+    - tqdm
     - motmetrics
     - scenedetect[opencv]

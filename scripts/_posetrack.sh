@@ -4,7 +4,7 @@
 
 python test_datasets.py \
 --track_dataset      "posetrack-val" \
---storage_folder     "Videos_v1" \
+--storage_folder     "Videos_posetrack" \
 --predict            "TPL" \
 --distance_type      "EQ_010" \
 --encode_type        "4c" \

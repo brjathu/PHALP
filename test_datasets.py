@@ -73,6 +73,6 @@ if __name__ == '__main__':
         if(not(opt.all_videos)): videos = ['000583_mpii_test']
 
         for video in videos:
-            opt.base_path = '_DATA/posetrack_2018/images/val/'
+            opt.base_path = '../_Videos/Posetrack_2018/'
             opt.video_seq = video
             test_tracker(opt, phalp_tracker)

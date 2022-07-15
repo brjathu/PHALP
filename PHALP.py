@@ -16,6 +16,7 @@ from sklearn.linear_model import Ridge
 from models.hmar import HMAR
 from models.utils import *
 
+from utils.utils_detectron2 import DefaultPredictor_Lazy
 from utils.utils_dataset import process_image, process_mask
 from utils.utils import get_prediction_interval
 from scenedetect import detect, ContentDetector
@@ -40,12 +41,12 @@ class PHALP_tracker(nn.Module):
         self.HMAR.to(self.device)
         self.HMAR.eval()  
 
+        self.detectron2_cfg = model_zoo.get_config('new_baselines/mask_rcnn_regnety_4gf_dds_FPN_400ep_LSJ.py', trained=True)
+        self.detectron2_cfg.model.roi_heads.box_predictor.test_score_thresh = 0.5
+        self.detectron2_cfg.model.roi_heads.box_predictor.test_nms_thresh   = 0.4
+        self.detector       = DefaultPredictor_Lazy(self.detectron2_cfg)
         self.detectron2_cfg = get_cfg()
-        self.detectron2_cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml"))   
-        self.detectron2_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-        self.detectron2_cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST   = 0.4
-        self.detectron2_cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml")
-        self.detector       = DefaultPredictor(self.detectron2_cfg)     
+        self.detectron2_cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml"))      
         
     def forward_for_tracking(self, vectors, attibute="A", time=1):
         

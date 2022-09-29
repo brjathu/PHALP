@@ -19,7 +19,8 @@ from models.utils import *
 from utils.utils_detectron2 import DefaultPredictor_Lazy
 from utils.utils_dataset import process_image, process_mask
 from utils.utils import get_prediction_interval
-from scenedetect import detect, ContentDetector
+from utils.utils_scenedetect import detect
+from scenedetect import AdaptiveDetector
 
 class PHALP_tracker(nn.Module):
 
@@ -294,7 +295,7 @@ class PHALP_tracker(nn.Module):
                 if(ft_==0): video_file = cv2.VideoWriter(video_tmp_name, cv2.VideoWriter_fourcc(*'mp4v'), 24, frameSize=(im_.shape[1], im_.shape[0]))
                 video_file.write(im_)
             video_file.release()
-            try:    scene_list = detect(video_tmp_name, ContentDetector())
+            try:    scene_list = detect(video_tmp_name, AdaptiveDetector())
             except: pass
             os.system("rm " + video_tmp_name)
             for scene in scene_list:

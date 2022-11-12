@@ -14,7 +14,7 @@ This code repository provides a code implementation for our paper PHALP, with in
 We recommend creating a clean [conda](https://docs.conda.io/) environment and install all dependencies.
 You can do this as follows:
 ```
-conda env create -f scripts/_env.yaml
+conda env create -f env.yaml
 ```
 
 After the installation is complete you can activate the conda environment by running:
@@ -26,7 +26,7 @@ conda activate PHALP
 
 Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
 
-`./scripts/_demo.sh`
+`python scripts/demo.py video.source="https://www.youtube.com/watch?v=xEH_5T9jMVU"`
 
 Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
 
@@ -51,16 +51,14 @@ To evaluate the tracking performance on ID switches, MOTA, and IDF1 and HOTA met
 
 We evaluated our method on PoseTrack, MuPoTs and AVA datasets. Our results show significant improvements over the state-of-the-art methods on person tracking. For more results please visit our [website](http://people.eecs.berkeley.edu/~jathushan/PHALP/).
 
-
-<!-- <p align="center"><img src="./utils/imgs/PHALP_10.gif" width="800"></p> -->
-<p align="center"><img src="./utils/imgs/PHALP_1.gif" width="800"></p>
-<p align="center"><img src="./utils/imgs/PHALP_2.gif" width="800"></p>
-<p align="center"><img src="./utils/imgs/PHALP_8.gif" width="800"></p>
-<p align="center"><img src="./utils/imgs/PHALP_3.gif" width="800"></p>
-<p align="center"><img src="./utils/imgs/PHALP_4.gif" width="800"></p>
-<p align="center"><img src="./utils/imgs/PHALP_5.gif" width="800"></p>
-<p align="center"><img src="./utils/imgs/PHALP_6.gif" width="800"></p>
-<p align="center"><img src="./utils/imgs/PHALP_7.gif" width="800"></p>
+<p align="center"><img src="./assets/imgs/PHALP_1.gif" width="800"></p>
+<p align="center"><img src="./assets/imgs/PHALP_2.gif" width="800"></p>
+<p align="center"><img src="./assets/imgs/PHALP_8.gif" width="800"></p>
+<p align="center"><img src="./assets/imgs/PHALP_3.gif" width="800"></p>
+<p align="center"><img src="./assets/imgs/PHALP_4.gif" width="800"></p>
+<p align="center"><img src="./assets/imgs/PHALP_5.gif" width="800"></p>
+<p align="center"><img src="./assets/imgs/PHALP_6.gif" width="800"></p>
+<p align="center"><img src="./assets/imgs/PHALP_7.gif" width="800"></p>
 
 ## Acknowledgements
 Parts of the code are taken or adapted from the following repos:

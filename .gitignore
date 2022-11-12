@@ -1,12 +1,9 @@
 # experiment folders
-out/
-wandb/
-
-# installation folders
 _DATA/
 _DEMO/
 _TEMP/
 _BACKUP/
+_OUT/
 external/neural_renderer/build/
 external/_BACKUP/
 deep_sort/

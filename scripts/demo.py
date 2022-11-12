@@ -7,7 +7,7 @@ import pyrootutils
 import submitit
 from omegaconf import DictConfig, OmegaConf
 
-import phalp.PHALP as PHALP
+from phalp import PHALP
 
 warnings.filterwarnings('ignore')
 

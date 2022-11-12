@@ -32,25 +32,3 @@ setup(
         # "networkx==2.8.6",
         ],
 )
-
-
-
-# """Setup PHALP."""
-
-# from setuptools import find_packages, setup
-
-
-# import ipdb; ipdb.set_trace()
-# setup(
-#     name="phalp",
-#     version="0.1.0",
-#     description='PHALP: A Python package for People Tracking in 3D',
-#     long_description_content_type="text/markdown",
-#     url="https://github.com/facebookresearch/pycls",
-#     packages=find_packages(),
-#     classifiers=[
-#         "Programming Language :: Python :: 3",
-#         "License :: OSI Approved :: MIT License",
-#     ],
-#     install_requires=["numpy", "opencv-python", "simplejson", "yacs"],
-# )

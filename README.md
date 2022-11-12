@@ -5,7 +5,7 @@ Code repository for the paper "Tracking People by Predicting 3D Appearance, Loca
  
 This code repository provides a code implementation for our paper PHALP, with installation, preparing datasets, and evaluating on datasets, and a demo code to run on any youtube videos. 
 
-<p align="center"><img src="./utils/imgs/teaser.png" width="800"></p>
+<p align="center"><img src="./assets/imgs/teaser.png" width="800"></p>
 
 **Abstract** : <em>In this paper, we present an approach for tracking people in monocular videos, by predicting their future 3D representations. To achieve this, we first lift people to 3D from a single frame in a robust way. This lifting includes information about the 3D pose of the person, his or her location in the 3D space, and the 3D appearance. As we track a person, we collect 3D observations over time in a tracklet representation. Given the 3D nature of our observations, we build temporal models for each one of the previous attributes. We use these models to predict the future state of the tracklet, including 3D location, 3D appearance, and 3D pose. For a future frame, we compute the similarity between the predicted state of a tracklet and the single frame observations in a probabilistic manner. Association is solved with simple Hungarian matching, and the matches are used to update the respective tracklets. We evaluate our approach on various benchmarks and report state-of-the-art results. </em> 
 
@@ -26,13 +26,13 @@ conda activate PHALP
 
 Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
 
-`python scripts/demo.py video.source="https://www.youtube.com/watch?v=xEH_5T9jMVU"`
+`python scripts/demo.py"`
 
 Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
 
-<p align="center"><img src="./utils/imgs/render_type.png" width="800"></p>
+<p align="center"><img src="./assets/imgs/render_type.png" width="800"></p>
 
-
+<!-- 
 ## Testing
 
 Once the posetrack dataset is downloaded at "_DATA/posetrack_2018/", run the following command to run our tracker on all videos on the supported datasets. This will run MaskRCNN, HMAR to create embeddings and run PHALP on these prepossessed data. 
@@ -44,7 +44,7 @@ Once the posetrack dataset is downloaded at "_DATA/posetrack_2018/", run the fol
 
 To evaluate the tracking performance on ID switches, MOTA, and IDF1 and HOTA metrics, please run the following command.
 
-`python3 evaluate_PHALP.py out/Videos_results/results/ PHALP posetrack`
+`python3 evaluate_PHALP.py out/Videos_results/results/ PHALP posetrack` -->
 
 
 ## Results ([Project site](http://people.eecs.berkeley.edu/~jathushan/PHALP/))

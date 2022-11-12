@@ -26,11 +26,12 @@ conda activate PHALP
 
 Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
 
-`python scripts/demo.py"`
+`python scripts/demo.py`
 
-Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded.
+<!-- By default we spport PyRender,  -->
+<!-- Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded. -->
 
-<p align="center"><img src="./assets/imgs/render_type.png" width="800"></p>
+<!-- <p align="center"><img src="./assets/imgs/render_type.png" width="800"></p> -->
 
 <!-- 
 ## Testing

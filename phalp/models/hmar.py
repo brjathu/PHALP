@@ -145,4 +145,4 @@ class HMAR(nn.Module):
 
         pred_keypoints_2d_smpl = (pred_keypoints_2d_smpl+0.5)*img_size
 
-        return pred_keypoints_2d_smpl, pred_joints, pred_cam_t
+        return pred_smpl_params, pred_keypoints_2d_smpl, pred_joints, pred_cam_t

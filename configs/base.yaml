@@ -15,6 +15,7 @@ video:
   output_dir: _OUT/videos_v0
   start_frame: 1100
   end_frame: 1300
+  output_resolution: 1440
 
 phalp:
   predict: TPL
@@ -67,7 +68,7 @@ EXTRA:
   FOCAL_LENGTH: 5000
 
 
-
+debug: False
 track_dataset: demo
 use_gt: False
 overwrite: True
@@ -78,8 +79,3 @@ store_mask: False
 
 base_path: null
 video_seq: null
-# youtube_id: xEH_5T9jMVU
-# all_videos: False
-# store_extra_info: False
-# sample: '/img/'
-# post_fix: ""

@@ -31,7 +31,6 @@ from phalp.utils.utils import (FrameExtractor, convert_pkl,
 from phalp.utils.utils_dataset import process_image, process_mask
 from phalp.utils.utils_detectron2 import DefaultPredictor_Lazy
 from phalp.utils.utils_scenedetect import detect
-from phalp.visualize.make_video import render_frame_main_online
 from phalp.visualize.visualizer import Visualizer
 
 warnings.filterwarnings('ignore')
@@ -96,7 +95,7 @@ class PHALP(nn.Module):
         history_keys    = ['appe', 'loca', 'pose', 'uv'] if self.cfg.render.enable else []
         prediction_keys = ['prediction_uv', 'prediction_pose', 'prediction_loca'] if self.cfg.render.enable else []
         extra_keys_1    = ['center', 'scale', 'size', 'img_path', 'img_name', 'mask_name', 'conf']
-        extra_keys_2    = ['smpl', '3d_joints', 'camera', 'embedding']
+        extra_keys_2    = ['smpl', 'camera', '3d_joints', 'embedding']
         history_keys    = history_keys + extra_keys_1 + extra_keys_2
         visual_store_   = eval_keys + history_keys + prediction_keys
         tmp_keys_       = ['uv', 'prediction_uv', 'prediction_pose', 'prediction_loca']
@@ -132,11 +131,11 @@ class PHALP(nn.Module):
             tracked_frames = []
             final_visuals_dic = {}
 
-            for t_, frame_name in track(enumerate(list_of_frames), description="Tracking : " + self.cfg.video_seq, total=len(list_of_frames)):
+            for t_, frame_name in track(enumerate(list_of_frames), description="Tracking : " + self.cfg.video_seq, total=len(list_of_frames), disable=self.cfg.debug):
                     
                 if(self.cfg.render.enable):
                     # reset the renderer
-                    self.visualizer.reset_render(self.cfg.render.res)    
+                    self.visualizer.reset_render(self.cfg.render.res*self.cfg.render.up_scale)    
                 
                 image_frame               = cv2.imread(frame_name)
                 img_height, img_width, _  = image_frame.shape
@@ -202,12 +201,12 @@ class PHALP(nn.Module):
                 if(self.cfg.render.enable and t_>=self.cfg.phalp.n_init):                    
                     d_ = self.cfg.phalp.n_init+1 if(t_+1==len(list_of_frames)) else 1
                     for t__ in range(t_, t_+d_):
-                        frame_key          = list_of_frames[t__-self.cfg.phalp.n_init]
-                        rendered_, f_size  = render_frame_main_online(self.cfg, self, frame_key, final_visuals_dic[frame_key], self.cfg.track_dataset, track_id=-100)      
+                        frame_key = list_of_frames[t__-self.cfg.phalp.n_init]
+                        rendered_, f_size = self.visualizer.render_video(final_visuals_dic[frame_key])      
                         if(t__-self.cfg.phalp.n_init in list_of_shots): cv2.rectangle(rendered_, (0,0), (f_size[0], f_size[1]), (0,0,255), 4)
                         if(t__-self.cfg.phalp.n_init==0):
-                            file_name      = self.cfg.video.output_dir + '/PHALP_' + str(self.cfg.video_seq) + '_'+ str(self.cfg.phalp.detection_type) + '.mp4'
-                            video_file     = cv2.VideoWriter(file_name, cv2.VideoWriter_fourcc(*'mp4v'), 30, frameSize=f_size)
+                            file_name = self.cfg.video.output_dir + '/PHALP_' + str(self.cfg.video_seq) + '_'+ str(self.cfg.phalp.detection_type) + '.mp4'
+                            video_file = cv2.VideoWriter(file_name, cv2.VideoWriter_fourcc(*'mp4v'), 30, frameSize=f_size)
                         video_file.write(rendered_)
                         del final_visuals_dic[frame_key]['frame']
                         for tkey_ in tmp_keys_:  del final_visuals_dic[frame_key][tkey_] 
@@ -253,10 +252,13 @@ class PHALP(nn.Module):
             list_of_frames = sorted(glob.glob("_DEMO/" + video_name + "/img/*.jpg"))
         
         # read from image folder
-        else:
+        elif(os.path.isdir(source_path)):
             video_name = source_path.split('/')[-1]
             img_path   = source_path
             list_of_frames = sorted(glob.glob(source_path + "/*.jpg"))
+            
+        else:
+            raise Exception("Invalid source path")
         
         # setup the video name and the root folder of the frames.
         self.cfg.video_seq = video_name
@@ -427,21 +429,20 @@ class PHALP(nn.Module):
             pose_embedding  = hmar_out['pose_emb']
             appe_embedding  = self.HMAR.autoencoder_hmar(uv_vector, en=True)
             appe_embedding  = appe_embedding.view(1, -1)
-            pred_joints_2d, pred_joints, pred_cam  = self.HMAR.get_3d_parameters(torch.cat((pose_embedding, pose_embedding), 1),
+            pred_smpl_params, pred_joints_2d, pred_joints, pred_cam  = self.HMAR.get_3d_parameters(torch.cat((pose_embedding, pose_embedding), 1),
                                                                                                np.array([[1.0, 0, 0]]),
                                                                                                center=(center_ + [left, top])*ratio,
                                                                                                img_size=self.cfg.render.res,
                                                                                                scale=np.reshape(np.array([max(scale_)]), (1, 1))*ratio,
                                                                                                texture=uv_vector[:, :3, :, :]*5.0, render=False)
-            pred_smpl_params, pred_cam_x, _    = self.HMAR.smpl_head(pose_embedding.float())
-            pred_smpl_params                   = {k:v.cpu().numpy() for k,v in pred_smpl_params.items()}
+            
+            pred_smpl_params = {k:v[0].cpu().numpy() for k,v in pred_smpl_params.items()}
             pred_joints_2d_ = pred_joints_2d.reshape(-1,)/self.cfg.render.res
-            pred_cam_       = pred_cam.view(-1,)
+            pred_cam_ = pred_cam.view(-1,)
             pred_joints_2d_.contiguous()
             pred_cam_.contiguous()
             loca_embedding  = torch.cat((pred_joints_2d_, pred_cam_, pred_cam_, pred_cam_), 0)
             
-        
         full_embedding    = torch.cat((appe_embedding[0].cpu(), pose_embedding[0].cpu(), pose_embedding[0].cpu(), loca_embedding.cpu()), 0)
 
         detection_data = {
@@ -455,9 +456,9 @@ class PHALP(nn.Module):
                               "center"          : center_,
                               "scale"           : scale_,
                               "smpl"            : pred_smpl_params,
+                              "camera"          : pred_cam_.cpu().numpy(),
                               "3d_joints"       : pred_joints[0].cpu().numpy(),
-                              "2d_joints"       : pred_joints[0].cpu().numpy(),
-                              "camera"          : pred_cam_x.cpu().numpy(),
+                              "2d_joints"       : pred_joints_2d_[0].cpu().numpy(),
                               "size"            : [img_height, img_width],
                               "img_path"        : frame_name,
                               "img_name"        : frame_name.split('/')[-1],

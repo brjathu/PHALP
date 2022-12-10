@@ -108,7 +108,7 @@ class PHALP(nn.Module):
         
         # process the source video and return a list of frames
         # source can be a video file, a youtube link or a image folder
-        list_of_frames = self.get_frames_from_source()
+        list_of_frames, additional_data = self.get_frames_from_source()
          
         # check if the video is already processed                                  
         if(not(self.cfg.overwrite) and os.path.isfile(self.cfg.video.output_dir + '/results/' + str(self.cfg.video_seq) + '.pkl')): return 0
@@ -222,7 +222,11 @@ class PHALP(nn.Module):
     def get_frames_from_source(self):
     
         source_path = self.cfg.video.source
-
+        
+        # {key: frame name, value: {"bbox": None, "extra data": None}}
+        # TODO: add this feature.
+        additional_data = {}
+        
         # check for youtube video
         if(source_path.startswith("https://") or source_path.startswith("http://")):
             video_name = source_path[-11:]
@@ -264,7 +268,7 @@ class PHALP(nn.Module):
         self.cfg.video_seq = video_name
         self.cfg.base_path = img_path
         
-        return list_of_frames        
+        return list_of_frames, additional_data        
     
     def forward_for_tracking(self, vectors, attibute="A", time=1):
         

@@ -1,11 +1,11 @@
-import torch
-from omegaconf import OmegaConf
-from detectron2.config import CfgNode, instantiate
-from detectron2.checkpoint import DetectionCheckpointer
 import detectron2.data.transforms as T
+import torch
+from detectron2.checkpoint import DetectionCheckpointer
+from detectron2.config import CfgNode, instantiate
 from detectron2.data import MetadataCatalog
+from omegaconf import OmegaConf
 
-        
+
 class DefaultPredictor_Lazy:
     """
     Create a simple end-to-end predictor with the given config that runs on

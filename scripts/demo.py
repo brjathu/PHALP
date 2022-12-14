@@ -6,7 +6,6 @@ import hydra
 import pyrootutils
 import submitit
 from omegaconf import DictConfig, OmegaConf
-
 from phalp import PHALP
 
 warnings.filterwarnings('ignore')

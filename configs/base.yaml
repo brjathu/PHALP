@@ -1,7 +1,7 @@
 defaults:  
   - _self_  
-  - override hydra/job_logging: colorlog
-  - override hydra/hydra_logging: colorlog
+  - override hydra/job_logging: none #colorlog
+  - override hydra/hydra_logging: none #colorlog
 
 paths: 
   output_dir: ${video.output_dir}

@@ -50,7 +50,7 @@ python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jM
 
 
 
-If you want to use the code inside your own code snippet , you can use the following code to run the tracker on a video. 
+If you want to use the code inside your own code snippet, you can use the following code to run the tracker on a video. 
 
 <p align="center"><img src="./assets/imgs/code.png" width="800"></p>
 

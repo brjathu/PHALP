@@ -43,6 +43,7 @@ class PHALP(nn.Module):
         super(PHALP, self).__init__()
 
         self.cfg = cfg
+        self.device = torch.device(self.cfg.device)
         
         # download wights and configs from Google Drive
         self.cached_download_from_drive()
@@ -57,19 +58,23 @@ class PHALP(nn.Module):
         if(self.cfg.render.enable):
             self.setup_visualizer()
         
+        # move to device
+        self.to(self.device)
+        
+        # train or eval
+        self.train() if(self.cfg.train) else self.eval()
         
     def setup_hmr(self):
         log.info("Loading HMR model...")
         self.HMAR       = HMAR(self.cfg)
-        self.device     = torch.device('cuda')
         checkpoint_file = torch.load('_DATA/hmar_v2_weights.pth')
         state_dict_filt = {}
         for k, v in checkpoint_file['model'].items():
             if ("encoding_head" in k or "texture_head" in k or "backbone" in k or "smplx_head" in k): 
                 state_dict_filt.setdefault(k[5:].replace("smplx", "smpl"), v)
         self.HMAR.load_state_dict(state_dict_filt, strict=False)
-        self.HMAR.to(self.device)
-        self.HMAR.eval()  
+        # self.HMAR.to(self.device)
+        # self.HMAR.eval()  
 
     def setup_detectron2(self):
         log.info("Loading Detection model...")

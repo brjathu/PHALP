@@ -14,12 +14,16 @@ This code repository provides a code implementation for our paper PHALP, with in
 We recommend creating a clean [conda](https://docs.conda.io/) environment and install all dependencies.
 You can do this as follows:
 ```
+git clone https://github.com/brjathu/PHALP.git
+git checkout v1.1
 conda env create -f env.yaml
+conda activate PHALP
 ```
 
-After the installation is complete you can activate the conda environment by running:
+You can also install the phalp package by running the following command. This will install the package in the current environment. This will allow you to use the package in your own code.
+
 ```
-conda activate PHALP
+pip install -e .
 ```
 
 ## Demo
@@ -36,15 +40,32 @@ By default we spport PyRender, and the rendering type is set to `HUMAN_MESH`. Yo
 python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' render.type=HUMAN_MASK
 ```
 
+<p align="center"><img src="./assets/imgs/render_type.png" width="800"></p>
+
 For debugging purposes, you can set `debug=True` to disable rich progress bar.
 
 ```
 python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' phalp.end_frame=100 debug=True
 ```
 
+
+
+If you want to use the code inside your own code snippet , you can use the following code to run the tracker on a video. 
+
+<p align="center"><img src="./assets/imgs/code.png" width="800"></p>
+
+<!-- ```
+import omegaconf
+from phalp import PHALP
+
+cfg = omegaconf.OmegaConf.load("/path/to/configs/base.yaml")
+phalp_tracker = PHALP(cfg)
+phalp_tracker.track()
+``` -->
+
+
 <!-- Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded. -->
 
-<p align="center"><img src="./assets/imgs/render_type.png" width="800"></p>
 
 <!-- 
 ## Testing

@@ -70,6 +70,8 @@ EXTRA:
 
 experiment_name: demo
 track_dataset: demo
+device: "cuda"
+train: False
 debug: False
 use_gt: False
 overwrite: True

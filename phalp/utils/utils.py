@@ -13,6 +13,7 @@ import scipy.stats as stats
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from colordict import *
 
 
 def numpy_to_torch_image(ndarray):
@@ -22,10 +23,15 @@ def numpy_to_torch_image(ndarray):
     torch_image              = torch_image[:, [2,1,0], :, :]
     return torch_image
   
-def get_colors():    
-    RGB_tuples                   = np.vstack([np.loadtxt("assets/colors.txt", skiprows=1) , np.random.uniform(0, 255, size=(10000, 3)), [[0,0,0]]])
-    b                            = np.where(RGB_tuples==0)
-    RGB_tuples[b]                = 1    
+def get_colors():  
+    try:  
+        RGB_tuples                   = np.vstack([np.loadtxt("assets/colors.txt", skiprows=1) , np.random.uniform(0, 255, size=(10000, 3)), [[0,0,0]]])
+        b                            = np.where(RGB_tuples==0)
+        RGB_tuples[b]                = 1    
+    except:
+        colormap = np.array(list(ColorDict(norm=255, mode='rgb', palettes_path="", is_grayscale=False, palettes='all').values()))
+        RGB_tuples = np.vstack([colormap[1:, :3], np.random.uniform(0, 255, size=(10000, 3)), [[0,0,0]]])
+        
     return RGB_tuples
 
 def get_prediction_interval(y, y_hat, x, x_hat):

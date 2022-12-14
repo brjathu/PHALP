@@ -1,8 +1,10 @@
-from scenedetect.scene_manager import SceneManager
-from scenedetect.scene_detector import SceneDetector
 from typing import List, Optional, Tuple
-from scenedetect.frame_timecode import FrameTimecode
+
 from scenedetect import open_video
+from scenedetect.frame_timecode import FrameTimecode
+from scenedetect.scene_detector import SceneDetector
+from scenedetect.scene_manager import SceneManager
+
 
 def detect(video_path: str,
            detector: SceneDetector,

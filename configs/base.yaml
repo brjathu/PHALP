@@ -35,7 +35,7 @@ phalp:
 
 render:
   enable: True
-  type: HUMAN_FULL
+  type: HUMAN_MESH # options: HUMAN_MESH, HUMAN_MASK, HUMAN_BBOX
   up_scale: 2
   res: 256
 
@@ -68,8 +68,9 @@ EXTRA:
   FOCAL_LENGTH: 5000
 
 
-debug: False
+experiment_name: demo
 track_dataset: demo
+debug: False
 use_gt: False
 overwrite: True
 batch_id: -1

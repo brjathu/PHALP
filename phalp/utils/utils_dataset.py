@@ -1,6 +1,7 @@
-import torch
-import numpy as np
 import cv2
+import numpy as np
+import torch
+
 
 def process_image(img, center, scale):
     mean = np.array([123.675, 116.280, 103.530])

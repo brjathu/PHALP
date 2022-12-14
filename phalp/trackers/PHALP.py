@@ -4,6 +4,8 @@ import time
 import traceback
 import warnings
 
+warnings.filterwarnings('ignore')
+
 import cv2
 import gdown
 import joblib
@@ -15,12 +17,6 @@ from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import Visualizer as D2Visualizer
-from pytube import YouTube
-from rich.progress import track
-from scenedetect import AdaptiveDetector
-from sklearn.linear_model import Ridge
-from tqdm import tqdm
-
 from phalp.deep_sort_ import nn_matching
 from phalp.deep_sort_.detection import Detection
 from phalp.deep_sort_.tracker import Tracker
@@ -32,8 +28,12 @@ from phalp.utils.utils_dataset import process_image, process_mask
 from phalp.utils.utils_detectron2 import DefaultPredictor_Lazy
 from phalp.utils.utils_scenedetect import detect
 from phalp.visualize.visualizer import Visualizer
-
-warnings.filterwarnings('ignore')
+from pycocotools import mask as mask_utils
+from pytube import YouTube
+from rich.progress import track
+from scenedetect import AdaptiveDetector
+from sklearn.linear_model import Ridge
+from tqdm import tqdm
 
 log = get_pylogger(__name__)
 
@@ -95,7 +95,7 @@ class PHALP(nn.Module):
         history_keys    = ['appe', 'loca', 'pose', 'uv'] if self.cfg.render.enable else []
         prediction_keys = ['prediction_uv', 'prediction_pose', 'prediction_loca'] if self.cfg.render.enable else []
         extra_keys_1    = ['center', 'scale', 'size', 'img_path', 'img_name', 'mask_name', 'conf']
-        extra_keys_2    = ['smpl', 'camera', '3d_joints', 'embedding']
+        extra_keys_2    = ['smpl', 'camera', '3d_joints', 'embedding', 'mask']
         history_keys    = history_keys + extra_keys_1 + extra_keys_2
         visual_store_   = eval_keys + history_keys + prediction_keys
         tmp_keys_       = ['uv', 'prediction_uv', 'prediction_pose', 'prediction_loca']
@@ -131,7 +131,11 @@ class PHALP(nn.Module):
             tracked_frames = []
             final_visuals_dic = {}
 
-            for t_, frame_name in track(enumerate(list_of_frames), description="Tracking : " + self.cfg.video_seq, total=len(list_of_frames), disable=self.cfg.debug):
+            for t_, frame_name in track(enumerate(list_of_frames), 
+                                        description="Tracking : " + self.cfg.video_seq, 
+                                        total=len(list_of_frames),
+                                        disable=self.cfg.debug
+                                        ):
                     
                 if(self.cfg.render.enable):
                     # reset the renderer
@@ -151,7 +155,7 @@ class PHALP(nn.Module):
                 detections = []
                 for bbox, mask, score, mask_name, gt_id in zip(pred_bbox, pred_masks, pred_scores, mask_names, gt):
                     if bbox[2]-bbox[0]<50 or bbox[3]-bbox[1]<100: continue
-                    detection_data = self.get_human_apl(image_frame, mask, bbox, score, frame_name, mask_name, t_, measurments, gt_id)
+                    detection_data = self.get_human_features(image_frame, mask, bbox, score, frame_name, mask_name, t_, measurments, gt_id)
                     detections.append(Detection(detection_data))
 
                 ############ tracking ##############
@@ -205,7 +209,7 @@ class PHALP(nn.Module):
                         rendered_, f_size = self.visualizer.render_video(final_visuals_dic[frame_key])      
                         if(t__-self.cfg.phalp.n_init in list_of_shots): cv2.rectangle(rendered_, (0,0), (f_size[0], f_size[1]), (0,0,255), 4)
                         if(t__-self.cfg.phalp.n_init==0):
-                            file_name = self.cfg.video.output_dir + '/PHALP_' + str(self.cfg.video_seq) + '_'+ str(self.cfg.phalp.detection_type) + '.mp4'
+                            file_name = self.cfg.video.output_dir + '/PHALP_' + str(self.cfg.video_seq) + '_'+ str(self.cfg.experiment_name) + '.mp4'
                             video_file = cv2.VideoWriter(file_name, cv2.VideoWriter_fourcc(*'mp4v'), 30, frameSize=f_size)
                         video_file.write(rendered_)
                         del final_visuals_dic[frame_key]['frame']
@@ -269,7 +273,115 @@ class PHALP(nn.Module):
         self.cfg.base_path = img_path
         
         return list_of_frames, additional_data        
-    
+
+    def get_detections(self, image, frame_name, t_):
+        image_to_write = image.copy()
+        mask_names     = []
+
+        if("mask" in self.cfg.phalp.detection_type):
+            outputs                   = self.detector(image)   
+            instances                 = outputs['instances']
+            instances                 = instances[instances.pred_classes==0]
+            instances                 = instances[instances.scores>self.cfg.phalp.low_th_c]
+
+            if(self.cfg.render.enable): 
+                visualizer            = D2Visualizer(image_to_write[:, :, ::-1], MetadataCatalog.get(self.detectron2_cfg.DATASETS.TRAIN[0]), scale=1.2)
+                if(self.cfg.store_mask): cv2.imwrite(self.cfg.video.output_dir + "/_TMP/" + self.cfg.video_seq + "_" + frame_name, visualizer.draw_instance_predictions(instances.to("cpu")).get_image()[:, :, ::-1])
+            
+            for i in range(instances.pred_classes.shape[0]):
+                mask_name_ = os.path.join(self.cfg.video.output_dir + "/_TMP/", self.cfg.video_seq + '_%s_%02d.png' % (frame_name.split('.')[0], i))
+                mask_names.append(mask_name_)
+                if(self.cfg.store_mask): 
+                    mask_bw = instances.pred_masks[i].cpu().numpy()
+                    cv2.imwrite(mask_name_, mask_bw.astype(int)*255)
+
+            pred_bbox      = instances.pred_boxes.tensor.cpu().numpy()
+            pred_masks     = instances.pred_masks.cpu().numpy()
+            pred_scores    = instances.scores.cpu().numpy()
+
+        ground_truth = [1 for i in list(range(len(pred_scores)))]
+
+        return pred_bbox, pred_masks, pred_scores, mask_names, ground_truth
+
+    def get_human_features(self, image, seg_mask, bbox, score, frame_name, mask_name, t_, measurments, gt=1):
+        
+        img_height, img_width, new_image_size, left, top = measurments                
+        
+        # Encode the mask for storing, borrowed from tao dataset
+        # https://github.com/TAO-Dataset/tao/blob/master/scripts/detectors/detectron2_infer.py
+        masks_decoded = np.array(np.expand_dims(seg_mask, 2), order='F', dtype=np.uint8)
+        rles = mask_utils.encode(masks_decoded)
+        for rle in rles: rle["counts"] = rle["counts"].decode("utf-8")
+        
+        seg_mask = seg_mask.astype(int)*255
+        if(len(seg_mask.shape)==2):
+            seg_mask        = np.expand_dims(seg_mask, 2)
+            seg_mask        = np.repeat(seg_mask, 3, 2)
+        
+        center_             = np.array([(bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2])
+        scale_              = np.array([(bbox[2] - bbox[0]), (bbox[3] - bbox[1])])
+        mask_tmp            = process_mask(seg_mask.astype(np.uint8), center_, 1.0*np.max(scale_))
+        image_tmp           = process_image(image, center_, 1.0*np.max(scale_))
+        masked_image        = torch.cat((image_tmp, mask_tmp[:1, :, :]), 0)
+        ratio               = 1.0/int(new_image_size)*self.cfg.render.res
+
+        with torch.no_grad():
+            hmar_out        = self.HMAR(masked_image.unsqueeze(0).cuda()) 
+
+            uv_image        = hmar_out['uv_image'][:, :3, :, :]/5.0
+            uv_mask         = hmar_out['uv_image'][:, 3:, :, :]
+            zeros_          = uv_mask==0
+            ones_           = torch.logical_not(zeros_)
+            zeros_          = zeros_.repeat(1, 3, 1, 1)
+            ones_           = ones_.repeat(1, 3, 1, 1)
+            uv_image[zeros_]= 0.0
+            uv_mask[zeros_[:, :1, :, :]] = -1.0
+            uv_mask[ones_[:, :1, :, :]]  = 1.0
+            uv_vector       = torch.cat((uv_image, uv_mask), 1)
+            pose_embedding  = hmar_out['pose_emb']
+            appe_embedding  = self.HMAR.autoencoder_hmar(uv_vector, en=True)
+            appe_embedding  = appe_embedding.view(1, -1)
+            pred_smpl_params, pred_joints_2d, pred_joints, pred_cam  = self.HMAR.get_3d_parameters(torch.cat((pose_embedding, pose_embedding), 1),
+                                                                                               np.array([[1.0, 0, 0]]),
+                                                                                               center=(center_ + [left, top])*ratio,
+                                                                                               img_size=self.cfg.render.res,
+                                                                                               scale=np.reshape(np.array([max(scale_)]), (1, 1))*ratio,
+                                                                                               texture=uv_vector[:, :3, :, :]*5.0, render=False)
+            
+            pred_smpl_params = {k:v[0].cpu().numpy() for k,v in pred_smpl_params.items()}
+            pred_joints_2d_ = pred_joints_2d.reshape(-1,)/self.cfg.render.res
+            pred_cam_ = pred_cam.view(-1,)
+            pred_joints_2d_.contiguous()
+            pred_cam_.contiguous()
+            loca_embedding  = torch.cat((pred_joints_2d_, pred_cam_, pred_cam_, pred_cam_), 0)
+            
+        full_embedding    = torch.cat((appe_embedding[0].cpu(), pose_embedding[0].cpu(), pose_embedding[0].cpu(), loca_embedding.cpu()), 0)
+
+        detection_data = {
+                              "bbox"            : np.array([bbox[0], bbox[1], (bbox[2] - bbox[0]), (bbox[3] - bbox[1])]),
+                              "mask"            : rles,
+                              "conf"            : score, 
+                              "appe"            : appe_embedding[0].cpu().numpy(), 
+                              "pose"            : torch.cat((pose_embedding[0].cpu(), pose_embedding[0].cpu()), 0).cpu().numpy(), 
+                              "loca"            : loca_embedding.cpu().numpy(), 
+                              "embedding"       : full_embedding, 
+                              "uv"              : uv_vector[0].cpu().numpy(), 
+                              "center"          : center_,
+                              "scale"           : scale_,
+                              "smpl"            : pred_smpl_params,
+                              "camera"          : pred_cam_.cpu().numpy(),
+                              "3d_joints"       : pred_joints[0].cpu().numpy(),
+                              "2d_joints"       : pred_joints_2d_[0].cpu().numpy(),
+                              "size"            : [img_height, img_width],
+                              "img_path"        : frame_name,
+                              "img_name"        : frame_name.split('/')[-1],
+                              "mask_name"       : mask_name,
+                              "ground_truth"    : gt,
+                              "time"            : t_,
+                         }
+        
+        return detection_data
+
     def forward_for_tracking(self, vectors, attibute="A", time=1):
         
         if(attibute=="P"):
@@ -387,9 +499,9 @@ class PHALP(nn.Module):
         d_mask       = d_uv[3:, :, :]>0.5
         t_mask       = t_uv[3:, :, :]>0.5
         
-        mask         = torch.logical_and(d_mask, t_mask)
-        mask         = mask.repeat(4, 1, 1)
-        mask_        = torch.logical_not(mask)
+        mask_dt      = torch.logical_and(d_mask, t_mask)
+        mask_dt      = mask_dt.repeat(4, 1, 1)
+        mask_        = torch.logical_not(mask_dt)
         
         t_uv[mask_]  = 0.0
         d_uv[mask_]  = 0.0
@@ -399,108 +511,7 @@ class PHALP(nn.Module):
             d_emb    = self.HMAR.autoencoder_hmar(d_uv.unsqueeze(0), en=True)
         t_emb        = t_emb.view(-1)/10**3
         d_emb        = d_emb.view(-1)/10**3
-        return t_emb.cpu().numpy(), d_emb.cpu().numpy(), torch.sum(mask).cpu().numpy()/4/256/256/2
-    
-    def get_human_apl(self, image, mask, bbox, score, frame_name, mask_name, t_, measurments, gt=1):
-        
-        img_height, img_width, new_image_size, left, top = measurments                
-        mask_a                                           = mask.astype(int)*255
-        
-        if(len(mask_a.shape)==2):
-            mask_a          = np.expand_dims(mask_a, 2)
-            mask_a          = np.repeat(mask_a, 3, 2)
-        
-        center_             = np.array([(bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2])
-        scale_              = np.array([(bbox[2] - bbox[0]), (bbox[3] - bbox[1])])
-        mask_tmp            = process_mask(mask_a.astype(np.uint8), center_, 1.0*np.max(scale_))
-        image_tmp           = process_image(image, center_, 1.0*np.max(scale_))
-        masked_image        = torch.cat((image_tmp, mask_tmp[:1, :, :]), 0)
-        ratio               = 1.0/int(new_image_size)*self.cfg.render.res
-
-        with torch.no_grad():
-            hmar_out        = self.HMAR(masked_image.unsqueeze(0).cuda()) 
-
-            uv_image        = hmar_out['uv_image'][:, :3, :, :]/5.0
-            uv_mask         = hmar_out['uv_image'][:, 3:, :, :]
-            zeros_          = uv_mask==0
-            ones_           = torch.logical_not(zeros_)
-            zeros_          = zeros_.repeat(1, 3, 1, 1)
-            ones_           = ones_.repeat(1, 3, 1, 1)
-            uv_image[zeros_]= 0.0
-            uv_mask[zeros_[:, :1, :, :]] = -1.0
-            uv_mask[ones_[:, :1, :, :]]  = 1.0
-            uv_vector       = torch.cat((uv_image, uv_mask), 1)
-            pose_embedding  = hmar_out['pose_emb']
-            appe_embedding  = self.HMAR.autoencoder_hmar(uv_vector, en=True)
-            appe_embedding  = appe_embedding.view(1, -1)
-            pred_smpl_params, pred_joints_2d, pred_joints, pred_cam  = self.HMAR.get_3d_parameters(torch.cat((pose_embedding, pose_embedding), 1),
-                                                                                               np.array([[1.0, 0, 0]]),
-                                                                                               center=(center_ + [left, top])*ratio,
-                                                                                               img_size=self.cfg.render.res,
-                                                                                               scale=np.reshape(np.array([max(scale_)]), (1, 1))*ratio,
-                                                                                               texture=uv_vector[:, :3, :, :]*5.0, render=False)
-            
-            pred_smpl_params = {k:v[0].cpu().numpy() for k,v in pred_smpl_params.items()}
-            pred_joints_2d_ = pred_joints_2d.reshape(-1,)/self.cfg.render.res
-            pred_cam_ = pred_cam.view(-1,)
-            pred_joints_2d_.contiguous()
-            pred_cam_.contiguous()
-            loca_embedding  = torch.cat((pred_joints_2d_, pred_cam_, pred_cam_, pred_cam_), 0)
-            
-        full_embedding    = torch.cat((appe_embedding[0].cpu(), pose_embedding[0].cpu(), pose_embedding[0].cpu(), loca_embedding.cpu()), 0)
-
-        detection_data = {
-                              "bbox"            : np.array([bbox[0], bbox[1], (bbox[2] - bbox[0]), (bbox[3] - bbox[1])]),
-                              "conf"            : score, 
-                              "appe"            : appe_embedding[0].cpu().numpy(), 
-                              "pose"            : torch.cat((pose_embedding[0].cpu(), pose_embedding[0].cpu()), 0).cpu().numpy(), 
-                              "loca"            : loca_embedding.cpu().numpy(), 
-                              "embedding"       : full_embedding, 
-                              "uv"              : uv_vector[0].cpu().numpy(), 
-                              "center"          : center_,
-                              "scale"           : scale_,
-                              "smpl"            : pred_smpl_params,
-                              "camera"          : pred_cam_.cpu().numpy(),
-                              "3d_joints"       : pred_joints[0].cpu().numpy(),
-                              "2d_joints"       : pred_joints_2d_[0].cpu().numpy(),
-                              "size"            : [img_height, img_width],
-                              "img_path"        : frame_name,
-                              "img_name"        : frame_name.split('/')[-1],
-                              "mask_name"       : mask_name,
-                              "ground_truth"    : gt,
-                              "time"            : t_,
-                         }
-        
-        return detection_data
-    
-    def get_detections(self, image, frame_name, t_):
-        image_to_write = image.copy()
-        mask_names     = []
-
-        if("mask" in self.cfg.phalp.detection_type):
-            outputs                   = self.detector(image)   
-            instances                 = outputs['instances']
-            instances                 = instances[instances.pred_classes==0]
-            instances                 = instances[instances.scores>self.cfg.phalp.low_th_c]
-
-            if(self.cfg.render.enable): 
-                visualizer            = D2Visualizer(image_to_write[:, :, ::-1], MetadataCatalog.get(self.detectron2_cfg.DATASETS.TRAIN[0]), scale=1.2)
-                if(self.cfg.store_mask): cv2.imwrite(self.cfg.video.output_dir + "/_TMP/" + self.cfg.video_seq + "_" + frame_name, visualizer.draw_instance_predictions(instances.to("cpu")).get_image()[:, :, ::-1])
-            
-            for i in range(instances.pred_classes.shape[0]):
-                mask_name_ = os.path.join(self.cfg.video.output_dir + "/_TMP/", self.cfg.video_seq + '_%s_%02d.png' % (frame_name.split('.')[0], i))
-                mask_names.append(mask_name_)
-                if(self.cfg.store_mask): 
-                    mask_bw = instances.pred_masks[i].cpu().numpy()
-                    cv2.imwrite(mask_name_, mask_bw.astype(int)*255)
-
-            pred_bbox      = instances.pred_boxes.tensor.cpu().numpy()
-            pred_masks     = instances.pred_masks.cpu().numpy()
-            pred_scores    = instances.scores.cpu().numpy()
-
-        ground_truth = [1 for i in list(range(len(pred_scores)))]
-
-        return pred_bbox, pred_masks, pred_scores, mask_names, ground_truth
+        return t_emb.cpu().numpy(), d_emb.cpu().numpy(), torch.sum(mask_dt).cpu().numpy()/4/256/256/2
 
     def get_list_of_shots(self, list_of_frames):
         list_of_shots    = []

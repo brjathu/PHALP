@@ -28,10 +28,17 @@ Please run the following command to run our method on a youtube video. This will
 
 `python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\'`
 
-<!-- By default we spport PyRender,  -->
+By default we spport PyRender, and the rendering type is set to `HUMAN_MESH`. You can change the rendering type to `GHOST` to see the continuous tracks, even if it is not detected or occluded. Also you can change the rendering type to `HUMAN_MASK` to visualize the segmentation mask of the person, for fast visualization. 
+
+`python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' render.type=HUMAN_MASK  phalp.end_frame=100`
+
+For debugging purposes, you can set `debug=True` to disable rich progress bar.
+
+`python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' render.type=HUMAN_MASK  phalp.end_frame=100 debug=True`
+
 <!-- Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded. -->
 
-<!-- <p align="center"><img src="./assets/imgs/render_type.png" width="800"></p> -->
+<p align="center"><img src="./assets/imgs/render_type.png" width="800"></p>
 
 <!-- 
 ## Testing

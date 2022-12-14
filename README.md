@@ -26,15 +26,21 @@ conda activate PHALP
 
 Please run the following command to run our method on a youtube video. This will download the youtube video from a given ID, and extract frames, run Detectron2, run HMAR and finally run our tracker and renders the video.
 
-`python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\'`
+```
+python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\'
+```
 
 By default we spport PyRender, and the rendering type is set to `HUMAN_MESH`. You can change the rendering type to `GHOST` to see the continuous tracks, even if it is not detected or occluded. Also you can change the rendering type to `HUMAN_MASK` to visualize the segmentation mask of the person, for fast visualization. 
 
-`python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' render.type=HUMAN_MASK  phalp.end_frame=100`
+```
+python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' render.type=HUMAN_MASK
+```
 
 For debugging purposes, you can set `debug=True` to disable rich progress bar.
 
-`python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' render.type=HUMAN_MASK  phalp.end_frame=100 debug=True`
+```
+python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' phalp.end_frame=100 debug=True
+```
 
 <!-- Also, you can render with different renders (NMR or PyRender) with different visualization by changing `render_type` option. Additionally, you can also replace `HUMAN` with `GHOST` to see the continuous tracks, even if it is not detected or occluded. -->
 

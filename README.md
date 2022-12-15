@@ -11,6 +11,7 @@ This code repository provides a code implementation for our paper PHALP, with in
 
 ## Installation
 
+# Basic installation
 We recommend creating a clean [conda](https://docs.conda.io/) environment and install all dependencies.
 You can do this as follows:
 ```
@@ -20,11 +21,24 @@ conda env create -f env.yaml
 conda activate PHALP
 ```
 
-You can also install the phalp package by running the following command. This will install the package in the current environment. This will allow you to use the package in your own code.
+This is sufficient for running our code from demo and on supported dataset. However, if you want to use the code inside your own code snippet, you can install the package by running the following command. This will install the package in the current environment. This will allow you to use the package in your own code.
 
 ```
 pip install -e .
 ```
+
+# PHALP package installation
+
+For using PHALP in your code, you can use the following code snippet. First, please install [PyTorch](https://pytorch.org/get-started/locally/) from offical website. Then install the package by running the following command. Afterward, you can use the package in your code as shown below.
+
+```
+pip install PHALP
+```
+
+If you want to use the code inside your own code snippet, you can use the following code to run the tracker on a video. output will be saved in `_OUT/` folder. 
+
+<p align="center"><img src="./assets/imgs/code.png" width="800"></p>
+
 
 ## Demo
 
@@ -48,11 +62,6 @@ For debugging purposes, you can set `debug=True` to disable rich progress bar.
 python scripts/demo.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\' phalp.end_frame=100 debug=True
 ```
 
-
-
-If you want to use the code inside your own code snippet, you can use the following code to run the tracker on a video. output will be saved in `_OUT/` folder. 
-
-<p align="center"><img src="./assets/imgs/code.png" width="800"></p>
 
 <!-- ```
 import omegaconf

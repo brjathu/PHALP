@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='phalp',
-    version='0.1.0',    
+    version='0.1.2',    
     description='PHALP: A Python package for People Tracking in 3D',
     url='https://github.com/brjathu/PHALP',
     author='Jathushan Rajasegaran',

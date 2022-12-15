@@ -78,7 +78,6 @@ overwrite: True
 batch_id: -1
 verbose: False
 detect_shots: False
-store_mask: False
 
 base_path: null
 video_seq: null

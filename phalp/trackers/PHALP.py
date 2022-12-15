@@ -16,7 +16,6 @@ from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
-from detectron2.utils.visualizer import Visualizer as D2Visualizer
 from phalp.deep_sort_ import nn_matching
 from phalp.deep_sort_.detection import Detection
 from phalp.deep_sort_.tracker import Tracker
@@ -72,9 +71,7 @@ class PHALP(nn.Module):
         for k, v in checkpoint_file['model'].items():
             if ("encoding_head" in k or "texture_head" in k or "backbone" in k or "smplx_head" in k): 
                 state_dict_filt.setdefault(k[5:].replace("smplx", "smpl"), v)
-        self.HMAR.load_state_dict(state_dict_filt, strict=False)
-        # self.HMAR.to(self.device)
-        # self.HMAR.eval()  
+        self.HMAR.load_state_dict(state_dict_filt, strict=False) 
 
     def setup_detectron2(self):
         log.info("Loading Detection model...")
@@ -281,30 +278,19 @@ class PHALP(nn.Module):
 
     def get_detections(self, image, frame_name, t_):
         image_to_write = image.copy()
-        mask_names     = []
 
         if("mask" in self.cfg.phalp.detection_type):
-            outputs                   = self.detector(image)   
-            instances                 = outputs['instances']
-            instances                 = instances[instances.pred_classes==0]
-            instances                 = instances[instances.scores>self.cfg.phalp.low_th_c]
+            outputs     = self.detector(image)   
+            instances   = outputs['instances']
+            instances   = instances[instances.pred_classes==0]
+            instances   = instances[instances.scores>self.cfg.phalp.low_th_c]
 
-            if(self.cfg.render.enable): 
-                visualizer            = D2Visualizer(image_to_write[:, :, ::-1], MetadataCatalog.get(self.detectron2_cfg.DATASETS.TRAIN[0]), scale=1.2)
-                if(self.cfg.store_mask): cv2.imwrite(self.cfg.video.output_dir + "/_TMP/" + self.cfg.video_seq + "_" + frame_name, visualizer.draw_instance_predictions(instances.to("cpu")).get_image()[:, :, ::-1])
-            
-            for i in range(instances.pred_classes.shape[0]):
-                mask_name_ = os.path.join(self.cfg.video.output_dir + "/_TMP/", self.cfg.video_seq + '_%s_%02d.png' % (frame_name.split('.')[0], i))
-                mask_names.append(mask_name_)
-                if(self.cfg.store_mask): 
-                    mask_bw = instances.pred_masks[i].cpu().numpy()
-                    cv2.imwrite(mask_name_, mask_bw.astype(int)*255)
-
-            pred_bbox      = instances.pred_boxes.tensor.cpu().numpy()
-            pred_masks     = instances.pred_masks.cpu().numpy()
-            pred_scores    = instances.scores.cpu().numpy()
+            pred_bbox   = instances.pred_boxes.tensor.cpu().numpy()
+            pred_masks  = instances.pred_masks.cpu().numpy()
+            pred_scores = instances.scores.cpu().numpy()
 
         ground_truth = [1 for i in list(range(len(pred_scores)))]
+        mask_names = [1 for i in list(range(len(pred_scores)))]
 
         return pred_bbox, pred_masks, pred_scores, mask_names, ground_truth
 

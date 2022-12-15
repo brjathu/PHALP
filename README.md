@@ -11,7 +11,7 @@ This code repository provides a code implementation for our paper PHALP, with in
 
 ## Installation
 
-# Basic installation
+### Basic installation
 We recommend creating a clean [conda](https://docs.conda.io/) environment and install all dependencies.
 You can do this as follows:
 ```
@@ -27,7 +27,7 @@ This is sufficient for running our code from demo and on supported dataset. Howe
 pip install -e .
 ```
 
-# PHALP package installation
+### PHALP package installation
 
 For using PHALP in your code, you can use the following code snippet. First, please install [PyTorch](https://pytorch.org/get-started/locally/) from offical website. Then install the package by running the following command. Afterward, you can use the package in your code as shown below.
 

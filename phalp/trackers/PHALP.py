@@ -276,7 +276,6 @@ class PHALP(nn.Module):
         return list_of_frames, additional_data        
 
     def get_detections(self, image, frame_name, t_):
-        image_to_write = image.copy()
 
         if("mask" in self.cfg.phalp.detection_type):
             outputs     = self.detector(image)   

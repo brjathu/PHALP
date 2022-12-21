@@ -16,9 +16,9 @@ from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
-from phalp.deep_sort_ import nn_matching
-from phalp.deep_sort_.detection import Detection
-from phalp.deep_sort_.tracker import Tracker
+from phalp.external.deep_sort_ import nn_matching
+from phalp.external.deep_sort_.detection import Detection
+from phalp.external.deep_sort_.tracker import Tracker
 from phalp.models.hmar import HMAR
 from phalp.utils import get_pylogger
 from phalp.utils.utils import (FrameExtractor, convert_pkl,
@@ -79,8 +79,7 @@ class PHALP(nn.Module):
         self.detectron2_cfg.model.roi_heads.box_predictor.test_score_thresh = 0.5
         self.detectron2_cfg.model.roi_heads.box_predictor.test_nms_thresh   = 0.4
         self.detector       = DefaultPredictor_Lazy(self.detectron2_cfg)
-        self.detectron2_cfg = get_cfg()
-        self.detectron2_cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml"))      
+        self.class_names    = self.detector.metadata.get('thing_classes')
         
     def setup_deepsort(self):
         log.info("Setting up DeepSort...")
@@ -96,7 +95,7 @@ class PHALP(nn.Module):
         eval_keys       = ['tracked_ids', 'tracked_bbox', 'tid', 'bbox', 'tracked_time']
         history_keys    = ['appe', 'loca', 'pose', 'uv'] if self.cfg.render.enable else []
         prediction_keys = ['prediction_uv', 'prediction_pose', 'prediction_loca'] if self.cfg.render.enable else []
-        extra_keys_1    = ['center', 'scale', 'size', 'img_path', 'img_name', 'mask_name', 'conf']
+        extra_keys_1    = ['center', 'scale', 'size', 'img_path', 'img_name', 'class_name', 'conf']
         extra_keys_2    = ['smpl', 'camera', '3d_joints', 'embedding', 'mask']
         history_keys    = history_keys + extra_keys_1 + extra_keys_2
         visual_store_   = eval_keys + history_keys + prediction_keys
@@ -151,13 +150,13 @@ class PHALP(nn.Module):
                 self.cfg.phalp.shot       = 1 if t_ in list_of_shots else 0
 
                 ############ detection ##############
-                pred_bbox, pred_masks, pred_scores, mask_names, gt = self.get_detections(image_frame, frame_name, t_)
+                pred_bbox, pred_masks, pred_scores, pred_classes, gt = self.get_detections(image_frame, frame_name, t_)
                 
                 ############ HMAR ##############
                 detections = []
-                for bbox, mask, score, mask_name, gt_id in zip(pred_bbox, pred_masks, pred_scores, mask_names, gt):
+                for bbox, mask, score, cls_id, gt_id in zip(pred_bbox, pred_masks, pred_scores, pred_classes, gt):
                     if bbox[2]-bbox[0]<50 or bbox[3]-bbox[1]<100: continue
-                    detection_data = self.get_human_features(image_frame, mask, bbox, score, frame_name, mask_name, t_, measurments, gt_id)
+                    detection_data = self.get_human_features(image_frame, mask, bbox, score, frame_name, cls_id, t_, measurments, gt_id)
                     detections.append(Detection(detection_data))
 
                 ############ tracking ##############
@@ -288,13 +287,13 @@ class PHALP(nn.Module):
             pred_bbox   = instances.pred_boxes.tensor.cpu().numpy()
             pred_masks  = instances.pred_masks.cpu().numpy()
             pred_scores = instances.scores.cpu().numpy()
-
+            pred_classes= instances.pred_classes.cpu().numpy()
+            
         ground_truth = [1 for i in list(range(len(pred_scores)))]
-        mask_names = [1 for i in list(range(len(pred_scores)))]
 
-        return pred_bbox, pred_masks, pred_scores, mask_names, ground_truth
+        return pred_bbox, pred_masks, pred_scores, pred_classes, ground_truth
 
-    def get_human_features(self, image, seg_mask, bbox, score, frame_name, mask_name, t_, measurments, gt=1):
+    def get_human_features(self, image, seg_mask, bbox, score, frame_name, cls_id, t_, measurments, gt=1):
         
         img_height, img_width, new_image_size, left, top = measurments                
         
@@ -366,7 +365,7 @@ class PHALP(nn.Module):
                               "size"            : [img_height, img_width],
                               "img_path"        : frame_name,
                               "img_name"        : frame_name.split('/')[-1],
-                              "mask_name"       : mask_name,
+                              "class_name"      : cls_id,
                               "ground_truth"    : gt,
                               "time"            : t_,
                          }

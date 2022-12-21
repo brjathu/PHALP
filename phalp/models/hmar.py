@@ -1,8 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from yacs.config import CfgNode as CN
-
 from phalp.models.backbones import resnet
 from phalp.models.heads.apperence_head import TextureHead
 from phalp.models.heads.encoding_head import EncodingHead
@@ -10,9 +8,10 @@ from phalp.models.heads.mesh import *
 from phalp.models.heads.smpl_head import SMPLHead
 from phalp.models.joint_mapper import JointMapper, smpl_to_openpose
 from phalp.models.pose_transformer import Pose_transformer
-from phalp.models.smplx import create
 from phalp.utils.utils import *
 from phalp.utils.utils import perspective_projection
+from phalp.utils.smpl_utils import SMPL
+from yacs.config import CfgNode as CN
 
 
 class HMAR(nn.Module):
@@ -40,26 +39,13 @@ class HMAR(nn.Module):
         self.backbone        = resnet(pretrained=True, num_layers=self.cfg.MODEL.BACKBONE.NUM_LAYERS, cfg=self.cfg)
         self.texture_head    = TextureHead(self.uv_sampler, self.cfg, img_H=img_H, img_W=img_W)
         self.encoding_head   = EncodingHead(cfg=self.cfg, img_H=img_H, img_W=img_W) 
-    
-        smpl_params  = {k.lower(): v for k,v in dict(cfg.SMPL).items()}
-        joint_mapper = JointMapper(smpl_to_openpose(model_type=cfg.SMPL.MODEL_TYPE))
-        self.smpl    = create(**smpl_params,
-                                  batch_size=1,
-                                  joint_mapper = joint_mapper,
-                                  create_betas=False,
-                                  create_body_pose=False,
-                                  create_global_orient=False,
-                                  create_left_hand_pose=False,
-                                  create_right_hand_pose=False,
-                                  create_expression=False,
-                                  create_leye_pose=False,
-                                  create_reye_pose=False,
-                                  create_jaw_pose=False,
-                                  create_transl=False)
+
+        smpl_cfg             = {k.lower(): v for k,v in dict(cfg.SMPL).items()}
+        self.smpl            = SMPL(**smpl_cfg)
         
-        self.smpl_head            = SMPLHead(cfg)
-        self.smpl_head.pool       = 'pooled'
-        self.device               = "cuda"
+        self.smpl_head       = SMPLHead(cfg)
+        self.smpl_head.pool  = 'pooled'
+        self.device          = "cuda"
         
         if("P" in self.cfg.phalp.predict):
             self.pose_transformer     = Pose_transformer(self.cfg)

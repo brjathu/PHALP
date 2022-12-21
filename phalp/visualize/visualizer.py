@@ -210,10 +210,10 @@ class Visualizer(nn.Module):
                     rendered_image_3 = numpy_to_torch_image(np.array(cv_image)/255.)
             else:
                 rendered_image_3              = copy.deepcopy(rendered_image_1x)
-
+                rendered_image_3              = rendered_image_3[:, :, top:top+img_height, left:left+img_width]
         else:
-            rendered_image_3              = copy.deepcopy(rendered_image_1x)
-            rendered_image_1              = rendered_image_1[:, :, top:top+img_height, left:left+img_width]
+            rendered_image_3 = copy.deepcopy(rendered_image_1x)
+            rendered_image_3 = rendered_image_3[:, :, top:top+img_height, left:left+img_width]
 
         grid_img = make_grid(torch.cat([rendered_image_3], 0), nrow=10)
         grid_img = grid_img[[2,1,0], :, :]

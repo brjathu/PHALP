@@ -1,4 +1,6 @@
 # Tracking People by Predicting 3D Appearance, Location & Pose (CVPR 2022 Oral)
+### See branch [master](https://github.com/brjathu/PHALP/tree/master) for our latest code ([4DHumans](https://github.com/shubham-goel/4D-Humans)) 
+### See branch [v.1.1](https://github.com/brjathu/PHALP/tree/v1.1) for cleaner version of the initial PHALP code
 Code repository for the paper "Tracking People by Predicting 3D Appearance, Location & Pose". \
 [Jathushan Rajasegaran](http://people.eecs.berkeley.edu/~jathushan/), [Georgios Pavlakos](https://geopavlakos.github.io/), [Angjoo Kanazawa](https://people.eecs.berkeley.edu/~kanazawa/), [Jitendra Malik](http://people.eecs.berkeley.edu/~malik/). \
 [![arXiv](https://img.shields.io/badge/arXiv-2112.04477-00ff00.svg)](https://arxiv.org/abs/2112.04477)       [![Website shields.io](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)](https://people.eecs.berkeley.edu/~jathushan/PHALP/)     [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1zeHvAcvflsty2p9Hgr49-AhQjkSWCXjr?usp=sharing)

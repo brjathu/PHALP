@@ -6,7 +6,7 @@ Code repository for the paper "Tracking People by Predicting 3D Appearance, Loca
 This code repository provides a code implementation for our paper PHALP, with installation, a demo code to run on any videos, preparing datasets, and evaluating on datasets.
 
 <b>This branch contains code supporting our latest work: [4D-Humans](https://github.com/shubham-goel/4D-Humans). <br>
-For the original PHALP code, please see the [inital release branch](https://github.com/brjathu/PHALP/tree/initial_release).</b>
+For the original PHALP code, please see the [initial release branch](https://github.com/brjathu/PHALP/tree/initial_release).</b>
 
 <p align="center"><img src="./assets/imgs/teaser.gif" width="800"></p>
 

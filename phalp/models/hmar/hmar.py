@@ -39,9 +39,9 @@ class HMAR(nn.Module):
         smpl_cfg             = {k.lower(): v for k,v in dict(cfg.SMPL).items()}
         self.smpl            = SMPL(**smpl_cfg)
         
-        self.smpl_head       = SMPLHead(cfg)
-        self.smpl_head.pool  = 'pooled'
-        self.device          = "cuda"
+        self.smpl_head       = SMPLHead(cfg, 
+                                        input_dim=cfg.MODEL.SMPL_HEAD.IN_CHANNELS,
+                                        pool='pooled')
         
     def load_weights(self, path):
         checkpoint_file = torch.load(path)
@@ -110,13 +110,14 @@ class HMAR(nn.Module):
 
         batch_size             = pred_cam.shape[0]
         dtype                  = pred_cam.dtype
-        focal_length           = self.cfg.EXTRA.FOCAL_LENGTH * torch.ones(batch_size, 2, device=self.device, dtype=dtype)
+        device                 = pred_cam.device
+        focal_length           = self.cfg.EXTRA.FOCAL_LENGTH * torch.ones(batch_size, 2, device=device, dtype=dtype)
  
         smpl_output            = self.smpl(**{k: v.float() for k,v in pred_smpl_params.items()}, pose2rot=False)
         pred_joints            = smpl_output.joints
 
-        pred_cam_t         = torch.stack([pred_cam[:,1], pred_cam[:,2], 2*focal_length[:, 0]/(pred_cam[:,0]*torch.tensor(scale[:, 0], dtype=dtype, device=self.device) + 1e-9)], dim=1)
-        pred_cam_t[:, :2] += torch.tensor(center-img_size/2., dtype=dtype, device=self.device) * pred_cam_t[:, [2]] / focal_length
+        pred_cam_t         = torch.stack([pred_cam[:,1], pred_cam[:,2], 2*focal_length[:, 0]/(pred_cam[:,0]*torch.tensor(scale[:, 0], dtype=dtype, device=device) + 1e-9)], dim=1)
+        pred_cam_t[:, :2] += torch.tensor(center-img_size/2., dtype=dtype, device=device) * pred_cam_t[:, [2]] / focal_length
 
         zeros_  = torch.zeros(batch_size, 1, 3).cuda()
         pred_joints = torch.cat((pred_joints, zeros_), 1)

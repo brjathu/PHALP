@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from einops import rearrange
-from phalp.models.predictor.smpl_head import SMPLHead
+from phalp.models.heads.smpl_head import SMPLHead
 from omegaconf import OmegaConf
 from torch import nn
 
@@ -186,16 +186,15 @@ class Transformer(nn.Module):
         return x
 
 class lart_transformer(nn.Module):
-    def __init__(self, opt, opt2, dim, depth, heads, mlp_dim, dim_head = 64, dropout = 0., emb_dropout = 0., droppath = 0., device=None):
+    def __init__(self, opt, phalp_cfg, dim, depth, heads, mlp_dim, dim_head = 64, dropout = 0., emb_dropout = 0., droppath = 0., device=None):
         super().__init__()
         self.cfg  = opt
-        self.cfg2 = opt2
+        self.phalp_cfg = phalp_cfg
         self.dim  = dim
-        self.device = device
         self.mask_token = nn.Parameter(torch.randn(self.dim,))
         self.class_token = nn.Parameter(torch.randn(1, 1, self.dim))
         
-        self.pos_embedding = nn.Parameter(positionalencoding1d(self.dim, 10000))#.to(self.device)
+        self.pos_embedding = nn.Parameter(positionalencoding1d(self.dim, 10000))
         self.pos_embedding_learned1 = nn.Parameter(torch.randn(1, self.cfg.frame_length, self.dim))
         self.pos_embedding_learned2 = nn.Parameter(torch.randn(1, self.cfg.frame_length, self.dim))
         self.register_buffer('pe', self.pos_embedding)
@@ -218,7 +217,7 @@ class lart_transformer(nn.Module):
                                         )
         
         # SMPL head for predicting SMPL parameters
-        self.smpl_head              = nn.ModuleList([SMPLHead(self.cfg, self.cfg2) for _ in range(self.cfg.num_smpl_heads)])
+        self.smpl_head              = nn.ModuleList([SMPLHead(self.phalp_cfg, input_dim=self.cfg.in_feat, pool='pooled') for _ in range(self.cfg.num_smpl_heads)])
         
         # Location head for predicting 3D location of the person
         self.loca_head              = nn.ModuleList([nn.Sequential(
@@ -275,7 +274,7 @@ class lart_transformer(nn.Module):
         # adding 2D posistion embedding
         # x = x + self.pos_embedding[None, :, :self.cfg.frame_length, :self.cfg.max_people].reshape(1, dim, self.cfg.frame_length*self.cfg.max_people).permute(0, 2, 1)
         
-        x                = x + self.pos_embedding_learned1
+        x    = x + self.pos_embedding_learned1
         x    = self.transformer1(x, [has_detection, mask_detection])
 
         x = x.transpose(1, 2)
@@ -306,7 +305,7 @@ class Pose_transformer_v2(nn.Module):
         self.cfg.max_people = 1
         self.encoder      = lart_transformer(   
                                 opt         = self.cfg, 
-                                opt2        = self.phalp_cfg,
+                                phalp_cfg   = self.phalp_cfg,
                                 dim         = self.cfg.in_feat,
                                 depth       = self.cfg.transformer.depth,
                                 heads       = self.cfg.transformer.heads,

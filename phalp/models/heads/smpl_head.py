@@ -24,13 +24,13 @@ class SMPLHead(nn.Module):
     """ SMPL Iterative Regressor with ResNet50 backbone
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, input_dim=2048, pool='pooled'):
         super(SMPLHead, self).__init__()
         self.cfg = cfg
         npose = 6 * (cfg.SMPL.NUM_BODY_JOINTS + 1)
         self.npose = npose
-        in_channels = cfg.MODEL.SMPL_HEAD.IN_CHANNELS
-        self.pool = cfg.MODEL.SMPL_HEAD.POOL
+        in_channels = input_dim
+        self.pool = pool
         self.fc1 = nn.Linear(in_channels + npose + 13, 1024)
         self.drop1 = nn.Dropout()
         self.fc2 = nn.Linear(1024, 1024)

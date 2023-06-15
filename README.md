@@ -35,7 +35,7 @@ pip install -e .[all]
 
 To run our code on a video, please specifiy the input video `video.source` and an output directory `video.output_dir`:
 ```bash
-python scripts/demo.py video.source=assets/videos/vid.mp4 video.output_dir='outputs'
+python scripts/demo.py video.source=assets/videos/gymnasts.mp4 video.output_dir='outputs'
 ```
 The output directory will contain a video rendering of the tracklets and a `.pkl` file containing the tracklets with 3D pose and shape (see structure below).
 <br>

@@ -265,7 +265,7 @@ class PHALP(nn.Module):
             self.io_manager.close_video()
             if(self.cfg.use_gt): joblib.dump(self.tracker.tracked_cost, self.cfg.video.output_dir + '/results/' + str(self.cfg.video_seq) + '_' + str(self.cfg.phalp.start_frame) + '_distance.pkl')
             
-            return final_visuals_dic
+            return final_visuals_dic, pkl_path
             
         except Exception as e: 
             print(e)

@@ -60,7 +60,7 @@ class Postprocessor(nn.Module):
                         # attach ava labels
                         ava_ = smoothed_fast_track_['ava_action'][i_]
                         ava_ = ava_.cpu()
-                        ava_labels, _ = to_ava_labels(ava_)
+                        ava_labels, _ = to_ava_labels(ava_, self.cfg)
                         final_visuals_dic[f_key].setdefault('label', {})[tid_] = ava_labels
                         final_visuals_dic[f_key].setdefault('ava_action', {})[tid_] = ava_
                         

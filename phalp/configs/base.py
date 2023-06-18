@@ -51,6 +51,11 @@ class PosePredictorConfig:
     mean_std: str = f"{CACHE_DIR}/phalp/3D/mean_std.npy"
 
 @dataclass
+class AVAConfig:
+    ava_labels_path: str = f"{CACHE_DIR}/phalp/ava/ava_labels.pkl"
+    ava_class_mappping_path: str = f"{CACHE_DIR}/phalp/ava/ava_class_mapping.pkl"
+
+@dataclass
 class HMRConfig:
     hmar_path: str = f"{CACHE_DIR}/phalp/weights/hmar_v2_weights.pth"
 
@@ -137,6 +142,7 @@ class FullConfig:
     video: VideoConfig = field(default_factory=VideoConfig)
     phalp: PHALPConfig = field(default_factory=PHALPConfig)
     pose_predictor: PosePredictorConfig = field(default_factory=PosePredictorConfig)
+    ava_config: AVAConfig = field(default_factory=AVAConfig)
     hmr: HMRConfig = field(default_factory=HMRConfig)
     render: RenderConfig = field(default_factory=RenderConfig)
     post_process: PostProcessConfig = field(default_factory=PostProcessConfig)

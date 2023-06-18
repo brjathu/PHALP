@@ -4,12 +4,10 @@ import numpy as np
 import torch
 
 
-def to_ava_labels(predictions):
+def to_ava_labels(predictions, cfg):
     """Converts the predictions to the AVA labels."""
-    # TODO: fix ava labels paths
-    # root = "/private/home/jathushan/Tracking/PHALP_v3"
-    label_map, _    = joblib.load("/private/home/jathushan/Tracking/PHALP_v3/_BACKUP/_DATA2/datasets/ava/ava_labels.pkl")
-    class_map_id    = joblib.load("/private/home/jathushan/Tracking/PHALP_v3/_BACKUP/_DATA2/datasets/ava/ava_class_mappping.pkl")
+    label_map, _    = joblib.load(cfg.ava_config.ava_labels_path)
+    class_map_id    = joblib.load(cfg.ava_config.ava_class_mappping_path)
 
     label_map       = {
         1: 'bend', 

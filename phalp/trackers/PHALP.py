@@ -590,7 +590,7 @@ class PHALP(nn.Module):
 
         return list_of_shots
 
-    def cached_download_from_drive(self):
+    def cached_download_from_drive(self, additional_urls=None):
         """Download a file from Google Drive if it doesn't exist yet.
         :param url: the URL of the file to download
         :param path: the path to save the file to
@@ -623,7 +623,12 @@ class PHALP(nn.Module):
             "hmar_v2_weights.pth"      : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/weights/hmar_v2_weights.pth", os.path.join(CACHE_DIR, "phalp/weights")],
             "pose_predictor.pth"       : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/weights/pose_predictor_40006.ckpt", os.path.join(CACHE_DIR, "phalp/weights")],
             "pose_predictor.yaml"      : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/weights/config_40006.yaml", os.path.join(CACHE_DIR, "phalp/weights")],
-        }
+            
+            # data for ava dataset
+            "ava_labels.pkl"           : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/ava/ava_labels.pkl", os.path.join(CACHE_DIR, "phalp/ava")],
+            "ava_class_mappping.pkl"   : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/ava/ava_class_mappping.pkl", os.path.join(CACHE_DIR, "phalp/ava")],
+    
+        } | additional_urls if additional_urls is not None else {}
         
         for file_name, url in download_files.items():
             if not os.path.exists(os.path.join(url[1], file_name)):

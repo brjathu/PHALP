@@ -613,7 +613,7 @@ class PHALP(nn.Module):
             os.system('rm basicModel_neutral_lbs_10_207_0_v1.0.0.pkl')
             os.system('mv basicModel_neutral_lbs_10_207_0_v1.0.0_p3.pkl ' + smpl_path)
 
-
+        additional_urls = additional_urls if additional_urls is not None else {}
         download_files = {
             "head_faces.npy"           : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/head_faces.npy", os.path.join(CACHE_DIR, "phalp/3D")],
             "mean_std.npy"             : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/mean_std.npy", os.path.join(CACHE_DIR, "phalp/3D")],
@@ -629,7 +629,7 @@ class PHALP(nn.Module):
             "ava_labels.pkl"           : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/ava/ava_labels.pkl", os.path.join(CACHE_DIR, "phalp/ava")],
             "ava_class_mapping.pkl"   : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/ava/ava_class_mappping.pkl", os.path.join(CACHE_DIR, "phalp/ava")],
     
-        } | additional_urls if additional_urls is not None else {}
+        } | additional_urls # type: ignore
         
         for file_name, url in download_files.items():
             if not os.path.exists(os.path.join(url[1], file_name)):

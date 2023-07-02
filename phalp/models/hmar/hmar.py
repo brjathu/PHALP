@@ -119,14 +119,14 @@ class HMAR(nn.Module):
         pred_cam_t         = torch.stack([pred_cam[:,1], pred_cam[:,2], 2*focal_length[:, 0]/(pred_cam[:,0]*torch.tensor(scale[:, 0], dtype=dtype, device=device) + 1e-9)], dim=1)
         pred_cam_t[:, :2] += torch.tensor(center-img_size/2., dtype=dtype, device=device) * pred_cam_t[:, [2]] / focal_length
 
-        zeros_  = torch.zeros(batch_size, 1, 3).cuda()
+        zeros_  = torch.zeros(batch_size, 1, 3).to(device)
         pred_joints = torch.cat((pred_joints, zeros_), 1)
 
         camera_center          = torch.zeros(batch_size, 2)
-        pred_keypoints_2d_smpl = perspective_projection(pred_joints, rotation=torch.eye(3,).unsqueeze(0).expand(batch_size, -1, -1).cuda(),
-                                                        translation=pred_cam_t.cuda(),
+        pred_keypoints_2d_smpl = perspective_projection(pred_joints, rotation=torch.eye(3,).unsqueeze(0).expand(batch_size, -1, -1).to(device),
+                                                        translation=pred_cam_t.to(device),
                                                         focal_length=focal_length / img_size,
-                                                        camera_center=camera_center.cuda())  
+                                                        camera_center=camera_center.to(device))  
 
         pred_keypoints_2d_smpl = (pred_keypoints_2d_smpl+0.5)*img_size
 

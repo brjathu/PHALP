@@ -80,6 +80,7 @@ class RenderConfig:
 class PostProcessConfig:
     apply_smoothing: bool = True
     phalp_pkl_path: str = '_OUT/videos_v0'
+    save_fast_tracks: bool = False
 
 @dataclass
 class SMPLConfig:

@@ -23,7 +23,7 @@ class Postprocessor(nn.Module):
         self.device = 'cuda'
         self.phalp_tracker = phalp_tracker
 
-    def post_process(self, final_visuals_dic):
+    def post_process(self, final_visuals_dic, save_fast_tracks=False, video_pkl_name=""):
 
         if(self.cfg.post_process.apply_smoothing):
             final_visuals_dic_ = copy.deepcopy(final_visuals_dic)
@@ -35,6 +35,22 @@ class Postprocessor(nn.Module):
                 with torch.no_grad():
                     smoothed_fast_track_ = self.phalp_tracker.pose_predictor.smooth_tracks(fast_track_, moving_window=True, step=32, window=32)
 
+                if(save_fast_tracks):
+                    frame_length = len(smoothed_fast_track_['frame_name'])
+                    dict_ava_feat = {}
+                    dict_ava_psudo_labels = {}
+                    for idx, appe_idx in enumerate(smoothed_fast_track_['apperance_index']):
+                        dict_ava_feat[appe_idx[0,0]] = smoothed_fast_track_['apperance_emb'][idx]
+                        dict_ava_psudo_labels[appe_idx[0,0]] = smoothed_fast_track_['action_emb'][idx]
+                    smoothed_fast_track_['action_label_gt'] = np.zeros((frame_length, 1, 80)).astype(int)
+                    smoothed_fast_track_['action_label_psudo'] = dict_ava_psudo_labels
+                    smoothed_fast_track_['apperance_dict'] = dict_ava_feat
+                    smoothed_fast_track_['pose_shape'] = smoothed_fast_track_['pose_shape'].cpu().numpy()
+
+                    # save the fast tracks in a pkl file
+                    save_pkl_path = os.path.join(self.cfg.video.output_dir, "results_temporal_fast/", video_pkl_name + "_" + str(tid_) +  "_" + str(frame_length) + ".pkl")
+                    joblib.dump(smoothed_fast_track_, save_pkl_path)
+
                 for i_ in range(smoothed_fast_track_['pose_shape'].shape[0]):
                     f_key = smoothed_fast_track_['frame_name'][i_]
                     tids_ = np.array(final_visuals_dic_[f_key]['tid'])
@@ -43,7 +59,7 @@ class Postprocessor(nn.Module):
                     if(len(idx_)>0):
 
                         pose_shape_ = smoothed_fast_track_['pose_shape'][i_]
-                        smpl_camera = pose_camera_vector_to_smpl(pose_shape_[0].cpu().numpy())
+                        smpl_camera = pose_camera_vector_to_smpl(pose_shape_[0])
                         smpl_ = smpl_camera[0]
                         camera = smpl_camera[1]
                         camera_ = smoothed_fast_track_['cam_smoothed'][i_][0].cpu().numpy()
@@ -74,6 +90,7 @@ class Postprocessor(nn.Module):
         final_visuals_dic = joblib.load(phalp_pkl_path)
 
         os.makedirs(self.cfg.video.output_dir + "/results_temporal/", exist_ok=True)
+        os.makedirs(self.cfg.video.output_dir + "/results_temporal_fast/", exist_ok=True)
         os.makedirs(self.cfg.video.output_dir + "/results_temporal_videos/", exist_ok=True)
         save_pkl_path = os.path.join(self.cfg.video.output_dir, "results_temporal/", video_pkl_name + ".pkl")
         save_video_path = os.path.join(self.cfg.video.output_dir, "results_temporal_videos/", video_pkl_name + "_.mp4")
@@ -81,8 +98,8 @@ class Postprocessor(nn.Module):
         if(os.path.exists(save_pkl_path) and not(self.cfg.overwrite)):
             return 0
         
-        # aplly smoothing/action recognition etc.
-        final_visuals_dic  = self.post_process(final_visuals_dic)
+        # apply smoothing/action recognition etc.
+        final_visuals_dic  = self.post_process(final_visuals_dic, save_fast_tracks=self.cfg.post_process.save_fast_tracks, video_pkl_name=video_pkl_name)
         
         # render the video
         if(self.cfg.render.enable):

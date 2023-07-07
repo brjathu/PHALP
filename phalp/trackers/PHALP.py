@@ -141,7 +141,7 @@ class PHALP(nn.Module):
         history_keys    = ['appe', 'loca', 'pose', 'uv'] if self.cfg.render.enable else []
         prediction_keys = ['prediction_uv', 'prediction_pose', 'prediction_loca'] if self.cfg.render.enable else []
         extra_keys_1    = ['center', 'scale', 'size', 'img_path', 'img_name', 'class_name', 'conf', 'annotations']
-        extra_keys_2    = ['smpl', 'camera', 'camera_bbox', '3d_joints', '2d_joints', 'mask']
+        extra_keys_2    = ['smpl', 'camera', 'camera_bbox', '3d_joints', '2d_joints', 'mask', 'extra_data']
         history_keys    = history_keys + extra_keys_1 + extra_keys_2
         visual_store_   = eval_keys + history_keys + prediction_keys
         tmp_keys_       = ['uv', 'prediction_uv', 'prediction_pose', 'prediction_loca']
@@ -192,9 +192,12 @@ class PHALP(nn.Module):
                 
                 ############ detection ##############
                 pred_bbox, pred_masks, pred_scores, pred_classes, gt_tids, gt_annots = self.get_detections(image_frame, frame_name, t_, additional_data, measurments)
+
+                ############ Run EXTRA models to attach to the detections ##############
+                extra_data = self.run_additional_models(image_frame, pred_bbox, pred_masks, pred_scores, pred_classes, frame_name, t_, measurments, gt_tids, gt_annots)
                 
                 ############ HMAR ##############
-                detections = self.get_human_features(image_frame, pred_masks, pred_bbox, pred_scores, frame_name, pred_classes, t_, measurments, gt_tids, gt_annots)
+                detections = self.get_human_features(image_frame, pred_masks, pred_bbox, pred_scores, frame_name, pred_classes, t_, measurments, gt_tids, gt_annots, extra_data)
 
                 ############ tracking ##############
                 self.tracker.predict()
@@ -353,7 +356,10 @@ class PHALP(nn.Module):
         
         return masked_image, center_, scale_, rles
     
-    def get_human_features(self, image, seg_mask, bbox, score, frame_name, cls_id, t_, measurments, gt=1, ann=None):
+    def run_additional_models(self, image_frame, pred_bbox, pred_masks, pred_scores, pred_classes, frame_name, t_, measurments, gt_tids, gt_annots):
+        return list(range(len(pred_scores)))
+
+    def get_human_features(self, image, seg_mask, bbox, score, frame_name, cls_id, t_, measurments, gt=1, ann=None, extra_data=None):
         NPEOPLE = len(score)
         BS = NPEOPLE
 
@@ -430,7 +436,8 @@ class PHALP(nn.Module):
                                 "time"            : t_,
 
                                 "ground_truth"    : gt[p_],
-                                "annotations"     : ann[p_]
+                                "annotations"     : ann[p_],
+                                "extra_data"      : extra_data[p_] if extra_data is not None else None
                             }
             detection_data_list.append(Detection(detection_data))
 

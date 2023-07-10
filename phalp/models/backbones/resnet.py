@@ -156,7 +156,7 @@ class ResNet(nn.Module):
         x4 = self.layer4(x3)
         
         if(self.cfg.MODEL.BACKBONE.MASK_TYPE=="feat"):
-            x5 = copy.deepcopy(x4)
+            x5 = x4.clone()
             x5 = x5*x_
             return x5, [x1,x2,x3,x4]
         else:

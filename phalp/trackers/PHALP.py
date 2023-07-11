@@ -363,6 +363,8 @@ class PHALP(nn.Module):
         NPEOPLE = len(score)
         BS = NPEOPLE
 
+        if(NPEOPLE==0): return []
+
         img_height, img_width, new_image_size, left, top = measurments                
         ratio = 1.0/int(new_image_size)*self.cfg.render.res
         masked_image_list = []

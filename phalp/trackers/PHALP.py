@@ -361,7 +361,6 @@ class PHALP(nn.Module):
 
     def get_human_features(self, image, seg_mask, bbox, score, frame_name, cls_id, t_, measurments, gt=1, ann=None, extra_data=None):
         NPEOPLE = len(score)
-        BS = NPEOPLE
 
         if(NPEOPLE==0): return []
 
@@ -371,14 +370,21 @@ class PHALP(nn.Module):
         center_list = []
         scale_list = []
         rles_list = []
+        selected_ids = []
         for p_ in range(NPEOPLE):
+            if bbox[p_][2]-bbox[p_][0]<self.cfg.phalp.small_w or bbox[p_][3]-bbox[p_][1]<self.cfg.phalp.small_h:
+                continue
             masked_image, center_, scale_, rles = self.get_croped_image(image, bbox[p_], seg_mask[p_])
             masked_image_list.append(masked_image)
             center_list.append(center_)
             scale_list.append(scale_)
             rles_list.append(rles)
+            selected_ids.append(p_)
+        
+        if(len(masked_image_list)==0): return []
 
         masked_image_list = torch.stack(masked_image_list, dim=0)
+        BS = masked_image_list.size(0)
         
         with torch.no_grad():
             extra_args      = {}
@@ -412,25 +418,25 @@ class PHALP(nn.Module):
         full_embedding    = torch.cat((appe_embedding.cpu(), pose_embedding, loca_embedding.cpu()), 1)
         
         detection_data_list = []
-        for p_ in range(NPEOPLE):
+        for i, p_ in enumerate(selected_ids):
             detection_data = {
                                 "bbox"            : np.array([bbox[p_][0], bbox[p_][1], (bbox[p_][2] - bbox[p_][0]), (bbox[p_][3] - bbox[p_][1])]),
-                                "mask"            : rles_list[p_],
+                                "mask"            : rles_list[i],
                                 "conf"            : score[p_], 
                                 
-                                "appe"            : appe_embedding[p_].cpu().numpy(), 
-                                "pose"            : pose_embedding[p_].numpy(), 
-                                "loca"            : loca_embedding[p_].cpu().numpy(), 
-                                "uv"              : uv_vector[p_].cpu().numpy(), 
+                                "appe"            : appe_embedding[i].cpu().numpy(), 
+                                "pose"            : pose_embedding[i].numpy(), 
+                                "loca"            : loca_embedding[i].cpu().numpy(), 
+                                "uv"              : uv_vector[i].cpu().numpy(), 
                                 
-                                "embedding"       : full_embedding[p_], 
-                                "center"          : center_list[p_],
-                                "scale"           : scale_list[p_],
-                                "smpl"            : pred_smpl_params[p_],
-                                "camera"          : pred_cam_[p_].cpu().numpy(),
-                                "camera_bbox"     : hmar_out['pred_cam'][p_].cpu().numpy(),
-                                "3d_joints"       : pred_joints[p_].cpu().numpy(),
-                                "2d_joints"       : pred_joints_2d_[p_].cpu().numpy(),
+                                "embedding"       : full_embedding[i], 
+                                "center"          : center_list[i],
+                                "scale"           : scale_list[i],
+                                "smpl"            : pred_smpl_params[i],
+                                "camera"          : pred_cam_[i].cpu().numpy(),
+                                "camera_bbox"     : hmar_out['pred_cam'][i].cpu().numpy(),
+                                "3d_joints"       : pred_joints[i].cpu().numpy(),
+                                "2d_joints"       : pred_joints_2d_[i].cpu().numpy(),
                                 "size"            : [img_height, img_width],
                                 "img_path"        : frame_name,
                                 "img_name"        : frame_name.split('/')[-1] if isinstance(frame_name, str) else None,

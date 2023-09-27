@@ -14,7 +14,7 @@ deep_sort/
 .nfs*
 /phalp_sbatch_out/
 /data
-/outputs
+/outputs*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

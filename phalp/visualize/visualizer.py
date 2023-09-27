@@ -174,6 +174,15 @@ class Visualizer(nn.Module):
         tracked_smpl = default_collate(tracked_smpl)
         smpl_output = self.hmar.smpl(**{k: v.float().cuda() for k,v in tracked_smpl.items()}, pose2rot=False)
         pred_joints = smpl_output.joints
+        # pred_joints = smpl_output.vertices
+        # # randomly choose 200 vertices
+        # if(self.a1 is None):
+        #     self.a1 = np.random.choice(pred_joints.shape[1], 200, replace=False)
+        # if(self.c%5==0):
+        #     np.random.seed(self.c)
+        #     self.a1 = np.random.choice(pred_joints.shape[1], 200, replace=False)
+        # self.c+=1
+        # pred_joints = pred_joints[:, self.a1, :]
         batch_size = pred_joints.shape[0]
         camera_center          = torch.zeros(batch_size, 2, device=self.device, dtype=pred_joints.dtype)
         focal_length           = self.cfg.EXTRA.FOCAL_LENGTH * torch.ones(batch_size, 2, device=self.device, dtype=pred_joints.dtype)
@@ -218,8 +227,8 @@ class Visualizer(nn.Module):
             mask_valid       = np.load("_DATA/fmap_256.npy")
             mask_valid       = mask_valid>0
             mask_valid_      = np.logical_not(mask_valid)
-            uv_maps          = uv_maps[ids_x, :, :, :]
-            tracked_ids_x    = np.sort(tracked_ids_x)
+            idx              = list(range(len(tracked_ids_x)))
+            uv_maps          = uv_maps[idx, :, :, :]
             for i_, track_id in enumerate(tracked_ids_x):
                 if(i_>7): continue
                 uv_x0 = (img_height//2)*(i_//4) + top
@@ -391,6 +400,7 @@ class Visualizer(nn.Module):
 
         if PANEL_TEXTURE:
             rendered_image_tex = self.tile_texture(image_resized, uv_maps, tracked_ids_x, img_height_, img_width_, top, left)
+            rendered_image_tex = F.interpolate(rendered_image_tex, size=(rendered_image_final.shape[2], rendered_image_final.shape[3]))
             grid_img = make_grid(torch.cat([rendered_image_final, rendered_image_tex], 0), nrow=10)
         else:
             grid_img = make_grid(rendered_image_final, nrow=10)

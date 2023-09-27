@@ -1,7 +1,7 @@
 import os
-from pathlib import Path
 import traceback
 import warnings
+from pathlib import Path
 
 warnings.filterwarnings('ignore')
 
@@ -13,6 +13,7 @@ import torch.nn as nn
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.structures import Boxes, Instances
+from hmr2.datasets.utils import expand_bbox_to_aspect_ratio
 from pycocotools import mask as mask_utils
 from scenedetect import AdaptiveDetector, detect
 from sklearn.linear_model import Ridge
@@ -191,13 +192,13 @@ class PHALP(nn.Module):
                     self.visualizer.reset_render(self.cfg.render.res*self.cfg.render.up_scale)
                 
                 ############ detection ##############
-                pred_bbox, pred_masks, pred_scores, pred_classes, gt_tids, gt_annots = self.get_detections(image_frame, frame_name, t_, additional_data, measurments)
+                pred_bbox, pred_bbox_pad, pred_masks, pred_scores, pred_classes, gt_tids, gt_annots = self.get_detections(image_frame, frame_name, t_, additional_data, measurments)
 
                 ############ Run EXTRA models to attach to the detections ##############
                 extra_data = self.run_additional_models(image_frame, pred_bbox, pred_masks, pred_scores, pred_classes, frame_name, t_, measurments, gt_tids, gt_annots)
                 
                 ############ HMAR ##############
-                detections = self.get_human_features(image_frame, pred_masks, pred_bbox, pred_scores, frame_name, pred_classes, t_, measurments, gt_tids, gt_annots, extra_data)
+                detections = self.get_human_features(image_frame, pred_masks, pred_bbox, pred_bbox_pad, pred_scores, frame_name, pred_classes, t_, measurments, gt_tids, gt_annots, extra_data)
 
                 ############ tracking ##############
                 self.tracker.predict()
@@ -291,16 +292,24 @@ class PHALP(nn.Module):
             bbox_array   = []
             class_array  = []
             scores_array = []
-                        
-            for bbox_ in gt_bbox:
-                x1 = bbox_[0] * img_width
-                y1 = bbox_[1] * img_height
-                x2 = bbox_[2] * img_width
-                y2 = bbox_[3] * img_height
 
-                bbox_array.append([x1, y1, x2, y2])
-                class_array.append(0)
-                scores_array.append(1)
+            # for ava bbox format  
+            # for bbox_ in gt_bbox:
+            #     x1 = bbox_[0] * img_width
+            #     y1 = bbox_[1] * img_height
+            #     x2 = bbox_[2] * img_width
+            #     y2 = bbox_[3] * img_height
+
+            # for posetrack bbox format
+            for bbox_ in gt_bbox:
+                x1 = bbox_[0]
+                y1 = bbox_[1]
+                x2 = bbox_[2] + x1
+                y2 = bbox_[3] + y1
+
+            bbox_array.append([x1, y1, x2, y2])
+            class_array.append(0)
+            scores_array.append(1)
                     
             bbox_array          = np.array(bbox_array)
             class_array         = np.array(class_array)
@@ -332,9 +341,9 @@ class PHALP(nn.Module):
             ground_truth_track_id = [1 for i in list(range(len(pred_scores)))]
             ground_truth_annotations = [[] for i in list(range(len(pred_scores)))]
 
-        return pred_bbox, pred_masks, pred_scores, pred_classes, ground_truth_track_id, ground_truth_annotations
+        return pred_bbox, pred_bbox, pred_masks, pred_scores, pred_classes, ground_truth_track_id, ground_truth_annotations
 
-    def get_croped_image(self, image, bbox, seg_mask):
+    def get_croped_image(self, image, bbox, bbox_pad, seg_mask):
         
         # Encode the mask for storing, borrowed from tao dataset
         # https://github.com/TAO-Dataset/tao/blob/master/scripts/detectors/detectron2_infer.py
@@ -350,16 +359,26 @@ class PHALP(nn.Module):
         
         center_      = np.array([(bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2])
         scale_       = np.array([(bbox[2] - bbox[0]), (bbox[3] - bbox[1])])
-        mask_tmp     = process_mask(seg_mask.astype(np.uint8), center_, 1.0*np.max(scale_))
-        image_tmp    = process_image(image, center_, 1.0*np.max(scale_))
+
+        center_pad   = np.array([(bbox_pad[2] + bbox_pad[0])/2, (bbox_pad[3] + bbox_pad[1])/2])
+        scale_pad    = np.array([(bbox_pad[2] - bbox_pad[0]), (bbox_pad[3] - bbox_pad[1])])
+        mask_tmp     = process_mask(seg_mask.astype(np.uint8), center_pad, 1.0*np.max(scale_pad))
+        image_tmp    = process_image(image, center_pad, 1.0*np.max(scale_pad))
+
+        # bbox_        = expand_bbox_to_aspect_ratio(bbox, target_aspect_ratio=(192,256))
+        # center_x     = np.array([(bbox_[2] + bbox_[0])/2, (bbox_[3] + bbox_[1])/2])
+        # scale_x      = np.array([(bbox_[2] - bbox_[0]), (bbox_[3] - bbox_[1])])
+        # mask_tmp     = process_mask(seg_mask.astype(np.uint8), center_x, 1.0*np.max(scale_x))
+        # image_tmp    = process_image(image, center_x, 1.0*np.max(scale_x))
+        
         masked_image = torch.cat((image_tmp, mask_tmp[:1, :, :]), 0)
         
-        return masked_image, center_, scale_, rles
+        return masked_image, center_, scale_, rles, center_pad, scale_pad
     
     def run_additional_models(self, image_frame, pred_bbox, pred_masks, pred_scores, pred_classes, frame_name, t_, measurments, gt_tids, gt_annots):
         return list(range(len(pred_scores)))
 
-    def get_human_features(self, image, seg_mask, bbox, score, frame_name, cls_id, t_, measurments, gt=1, ann=None, extra_data=None):
+    def get_human_features(self, image, seg_mask, bbox, bbox_pad, score, frame_name, cls_id, t_, measurments, gt=1, ann=None, extra_data=None):
         NPEOPLE = len(score)
 
         if(NPEOPLE==0): return []
@@ -374,10 +393,10 @@ class PHALP(nn.Module):
         for p_ in range(NPEOPLE):
             if bbox[p_][2]-bbox[p_][0]<self.cfg.phalp.small_w or bbox[p_][3]-bbox[p_][1]<self.cfg.phalp.small_h:
                 continue
-            masked_image, center_, scale_, rles = self.get_croped_image(image, bbox[p_], seg_mask[p_])
+            masked_image, center_, scale_, rles, center_pad, scale_pad = self.get_croped_image(image, bbox[p_], bbox_pad[p_], seg_mask[p_])
             masked_image_list.append(masked_image)
-            center_list.append(center_)
-            scale_list.append(scale_)
+            center_list.append(center_pad)
+            scale_list.append(scale_pad)
             rles_list.append(rles)
             selected_ids.append(p_)
         
@@ -648,6 +667,8 @@ class PHALP(nn.Module):
             "smpl_mean_params.npz"     : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/smpl_mean_params.npz", os.path.join(CACHE_DIR, "phalp/3D")],
             "SMPL_to_J19.pkl"          : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/SMPL_to_J19.pkl", os.path.join(CACHE_DIR, "phalp/3D")],
             "texture.npz"              : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/texture.npz", os.path.join(CACHE_DIR, "phalp/3D")],
+            "bmap_256.npy"              : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/bmap_256.npy", os.path.join(CACHE_DIR, "phalp/3D")],
+            "fmap_256.npy"              : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/fmap_256.npy", os.path.join(CACHE_DIR, "phalp/3D")],
 
             "hmar_v2_weights.pth"      : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/weights/hmar_v2_weights.pth", os.path.join(CACHE_DIR, "phalp/weights")],
             "pose_predictor.pth"       : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/weights/pose_predictor_40006.ckpt", os.path.join(CACHE_DIR, "phalp/weights")],

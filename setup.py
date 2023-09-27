@@ -30,7 +30,7 @@ setup(
             "detectron2 @ git+https://github.com/facebookresearch/detectron2.git",
             "pytube @ git+https://github.com/pytube/pytube.git",
             "pyopengl @ git+https://github.com/mmatl/pyopengl.git",
-            "neural-renderer-pytorch git+https://github.com/shubham-goel/NMR.git",
+            "neural-renderer-pytorch @ git+https://github.com/shubham-goel/NMR.git",
         ],
     extras_require={
         'all': [

@@ -30,10 +30,11 @@ setup(
             "detectron2 @ git+https://github.com/facebookresearch/detectron2.git",
             "pytube @ git+https://github.com/pytube/pytube.git",
             "pyopengl @ git+https://github.com/mmatl/pyopengl.git",
+            "neural-renderer-pytorch git+https://github.com/shubham-goel/NMR.git",
         ],
     extras_require={
         'all': [
-            "hmr2 @ git+https://github.com/shubham-goel/4D-Humans.git@devtrack-pad",
+            "hmr2 @ git+https://github.com/shubham-goel/4D-Humans.git@track-pad",
         ],
         'blur': [
             'facenet_pytorch'

@@ -8,7 +8,6 @@ def process_image(img, center, scale, output_size=256):
     std = np.array([58.395, 57.120, 57.375])
 
     img, _, _ = generate_image_patch(img, center[0], center[1], scale, scale, output_size, output_size, False, 1.0, 0.0)
-    img = img[:, :, ::-1].copy().astype(np.float32)
     img_n = img[:, :, ::-1].copy().astype(np.float32)
     for n_c in range(3):
         img_n[:, :, n_c] = (img_n[:, :, n_c] - mean[n_c]) / std[n_c]

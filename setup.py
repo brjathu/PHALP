@@ -34,7 +34,7 @@ setup(
         ],
     extras_require={
         'all': [
-            "hmr2 @ git+https://github.com/shubham-goel/4D-Humans.git@track-pad",
+            "hmr2 @ git+https://github.com/shubham-goel/4D-Humans.git",
         ],
         'blur': [
             'facenet_pytorch'

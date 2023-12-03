@@ -25,11 +25,11 @@ setup(
             "timm",
             "av",
             "smplx==0.1.28",
-            "chumpy",           # smplx dependency
-            "numpy>=1.23.0",    # required by chumpy
+            "numpy",
             "detectron2 @ git+https://github.com/facebookresearch/detectron2.git",
             "pytube @ git+https://github.com/pytube/pytube.git",
             "pyopengl @ git+https://github.com/mmatl/pyopengl.git",
+            "chumpy @ git+https://github.com/mattloper/chumpy", # smplx dependency
             "neural-renderer-pytorch @ git+https://github.com/shubham-goel/NMR.git",
         ],
     extras_require={

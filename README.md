@@ -25,7 +25,7 @@ git clone https://github.com/brjathu/PHALP.git
 cd PHALP
 conda create -n phalp python=3.10
 conda activate phalp
-conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.6 -c pytorch -c nvidia
+conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
 pip install -e .[all]
 ```
 </details>

@@ -307,9 +307,9 @@ class PHALP(nn.Module):
                 x2 = bbox_[2] + x1
                 y2 = bbox_[3] + y1
 
-            bbox_array.append([x1, y1, x2, y2])
-            class_array.append(0)
-            scores_array.append(1)
+                bbox_array.append([x1, y1, x2, y2])
+                class_array.append(0)
+                scores_array.append(1)
                     
             bbox_array          = np.array(bbox_array)
             class_array         = np.array(class_array)

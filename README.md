@@ -70,6 +70,19 @@ In addition to these options, you can also give images and bounding boxes as inp
                     }
 ```
 </details>
+
+Here is an example, of how to give bounding boxes and track-ids to the model and get the renderings.
+```bash
+mkdir assets/videos/gymnasts
+ffmpeg -i assets/videos/gymnasts.mp4 -q:v 2 assets/videos/gymnasts/%06d.jpg
+
+python scripts/demo.py \
+render.enable=True \
+video.output_dir=test_gt_bbox \
+use_gt=True \
+video.base_path=assets/videos/gymansts \
+video.source=assets/videos/gt_tracks.pkl
+```
 <br>
 
 ### Running on a subset of frames

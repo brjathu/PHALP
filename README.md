@@ -80,7 +80,7 @@ python scripts/demo.py \
 render.enable=True \
 video.output_dir=test_gt_bbox \
 use_gt=True \
-video.base_path=assets/videos/gymansts \
+video.base_path=assets/videos/gymnasts \
 video.source=assets/videos/gt_tracks.pkl
 ```
 <br>

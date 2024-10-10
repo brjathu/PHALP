@@ -36,7 +36,7 @@ class HMAR(nn.Module):
         self.texture_head    = TextureHead(self.uv_sampler, self.cfg, img_H=img_H, img_W=img_W)
         self.encoding_head   = EncodingHead(cfg=self.cfg, img_H=img_H, img_W=img_W) 
 
-        smpl_cfg             = {k.lower(): v for k,v in dict(cfg.SMPL).items()}
+        smpl_cfg             = {k.lower(): v for k,v in cfg.SMPL.__dict__.items()}
         self.smpl            = SMPL(**smpl_cfg)
         
         self.smpl_head       = SMPLHead(cfg, 

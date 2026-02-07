@@ -662,21 +662,21 @@ class PHALP(nn.Module):
 
         additional_urls = additional_urls if additional_urls is not None else {}
         download_files = {
-            "head_faces.npy"           : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/head_faces.npy", os.path.join(CACHE_DIR, "phalp/3D")],
-            "mean_std.npy"             : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/mean_std.npy", os.path.join(CACHE_DIR, "phalp/3D")],
-            "smpl_mean_params.npz"     : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/smpl_mean_params.npz", os.path.join(CACHE_DIR, "phalp/3D")],
-            "SMPL_to_J19.pkl"          : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/SMPL_to_J19.pkl", os.path.join(CACHE_DIR, "phalp/3D")],
-            "texture.npz"              : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/3D/texture.npz", os.path.join(CACHE_DIR, "phalp/3D")],
-            "bmap_256.npy"              : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/bmap_256.npy", os.path.join(CACHE_DIR, "phalp/3D")],
-            "fmap_256.npy"              : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/fmap_256.npy", os.path.join(CACHE_DIR, "phalp/3D")],
+            "head_faces.npy"           : ["https://www.cs.utexas.edu/~pavlakos/phalp/3D/head_faces.npy", os.path.join(CACHE_DIR, "phalp/3D")],
+            "mean_std.npy"             : ["https://www.cs.utexas.edu/~pavlakos/phalp/3D/mean_std.npy", os.path.join(CACHE_DIR, "phalp/3D")],
+            "smpl_mean_params.npz"     : ["https://www.cs.utexas.edu/~pavlakos/phalp/3D/smpl_mean_params.npz", os.path.join(CACHE_DIR, "phalp/3D")],
+            "SMPL_to_J19.pkl"          : ["https://www.cs.utexas.edu/~pavlakos/phalp/3D/SMPL_to_J19.pkl", os.path.join(CACHE_DIR, "phalp/3D")],
+            "texture.npz"              : ["https://www.cs.utexas.edu/~pavlakos/phalp/3D/texture.npz", os.path.join(CACHE_DIR, "phalp/3D")],
+            "bmap_256.npy"              : ["https://www.cs.utexas.edu/~pavlakos/phalp/bmap_256.npy", os.path.join(CACHE_DIR, "phalp/3D")],
+            "fmap_256.npy"              : ["https://www.cs.utexas.edu/~pavlakos/phalp/fmap_256.npy", os.path.join(CACHE_DIR, "phalp/3D")],
 
-            "hmar_v2_weights.pth"      : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/weights/hmar_v2_weights.pth", os.path.join(CACHE_DIR, "phalp/weights")],
-            "pose_predictor.pth"       : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/weights/pose_predictor_40006.ckpt", os.path.join(CACHE_DIR, "phalp/weights")],
-            "pose_predictor.yaml"      : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/weights/config_40006.yaml", os.path.join(CACHE_DIR, "phalp/weights")],
+            "hmar_v2_weights.pth"      : ["https://www.cs.utexas.edu/~pavlakos/phalp/weights/hmar_v2_weights.pth", os.path.join(CACHE_DIR, "phalp/weights")],
+            "pose_predictor.pth"       : ["https://www.cs.utexas.edu/~pavlakos/phalp/weights/pose_predictor_40006.ckpt", os.path.join(CACHE_DIR, "phalp/weights")],
+            "pose_predictor.yaml"      : ["https://www.cs.utexas.edu/~pavlakos/phalp/weights/config_40006.yaml", os.path.join(CACHE_DIR, "phalp/weights")],
             
             # data for ava dataset
-            "ava_labels.pkl"           : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/ava/ava_labels.pkl", os.path.join(CACHE_DIR, "phalp/ava")],
-            "ava_class_mapping.pkl"   : ["https://people.eecs.berkeley.edu/~jathushan/projects/phalp/ava/ava_class_mappping.pkl", os.path.join(CACHE_DIR, "phalp/ava")],
+            "ava_labels.pkl"           : ["https://www.cs.utexas.edu/~pavlakos/phalp/ava/ava_labels.pkl", os.path.join(CACHE_DIR, "phalp/ava")],
+            "ava_class_mapping.pkl"   : ["https://www.cs.utexas.edu/~pavlakos/phalp/ava/ava_class_mappping.pkl", os.path.join(CACHE_DIR, "phalp/ava")],
     
         } | additional_urls # type: ignore
         

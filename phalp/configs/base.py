@@ -122,6 +122,7 @@ class ModelConfig:
 @dataclass
 class ExtraConfig:
     FOCAL_LENGTH: int = 5000
+    FRAME_FORMAT: str = "jpg"
 
 @dataclass
 class FullConfig:

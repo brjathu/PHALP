@@ -53,8 +53,8 @@ class IO_Manager():
 
                 fe = FrameExtractor(source_path)
                 log.info('Number of frames: ' + str(fe.n_frames))
-                fe.extract_frames(every_x_frame=1, img_name='', dest_path= self.cfg.video.output_dir + "/_DEMO/" + video_name + "/img/", start_frame=self.cfg.video.start_frame, end_frame=self.cfg.video.end_frame)
-                list_of_frames = sorted(glob.glob(self.cfg.video.output_dir + "/_DEMO/" + video_name + "/img/*.jpg"))
+                fe.extract_frames(every_x_frame=1, img_name='', dest_path= self.cfg.video.output_dir + "/_DEMO/" + video_name + "/img/", img_ext="." + self.cfg.EXTRA.FRAME_FORMAT, start_frame=self.cfg.video.start_frame, end_frame=self.cfg.video.end_frame)
+                list_of_frames = sorted(glob.glob(self.cfg.video.output_dir + "/_DEMO/" + video_name + "/img/*." + self.cfg.EXTRA.FRAME_FORMAT))
             else:
                 start_time, end_time = int(self.cfg.video.start_time[:-1]), int(self.cfg.video.end_time[:-1])
                 try:
@@ -85,7 +85,7 @@ class IO_Manager():
         # read from image folder
         elif(os.path.isdir(source_path)):
             video_name = source_path.split('/')[-1]
-            list_of_frames = sorted(glob.glob(source_path + "/*.jpg"))
+            list_of_frames = sorted(glob.glob(source_path + "/*." + self.cfg.EXTRA.FRAME_FORMAT))
 
         # pkl files are used to track ground truth videos with given bounding box
         # these gt_id, gt_bbox will be stored in additional_data, ground truth bbox should be in the format of [x1, y1, w, h]
